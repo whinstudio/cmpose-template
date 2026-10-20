@@ -1,6 +1,6 @@
 package com.kturker.multiplatform.core.image
 
-/** The largest image the backend accepts (the server's own limit, `server` FileStore), in bytes. */
+/** The largest image the app uploads, in bytes; within the backend template's default upload limit. */
 const val MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 /** The longest side, in pixels, of an image the app uploads; bigger ones are scaled down. */

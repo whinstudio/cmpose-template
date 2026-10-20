@@ -10,5 +10,6 @@ GOOGLE_REVERSED_CLIENT_ID=
 // /cmpose:backend
 
 CURRENT_PROJECT_VERSION=1
-MARKETING_VERSION=1.0
+// Must equal AppConfig.versionName in build-logic: the server's X-Client-Version check compares one version for both platforms
+MARKETING_VERSION=0.0.1
 OTHER_LDFLAGS = $(inherited) -lsqlite3

@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,18 +15,30 @@ import androidx.compose.ui.window.DialogProperties
 import org.koin.compose.koinInject
 
 // Call once in MainScreen: checks at most once a day (every launch while an update is required) and shows
-// the platform's update flow, an "Update available" dialog (iOS) or the "Update required" screen
+// the platform's update flow, an "Update available" dialog (iOS) or the "Update required" screen. The screen
+// also opens as soon as the backend answers 426 (signal), whatever the daily check decided.
 @Composable
 fun AppUpdateEffect(
     texts: UpdateTexts = UpdateTexts(),
-    checker: UpdateChecker = koinInject()
+    checker: UpdateChecker = koinInject(),
+    signal: ForcedUpdateSignal = koinInject()
 ) {
     var decision by remember { mutableStateOf<UpdateDecision?>(null) }
     var downloaded by remember { mutableStateOf(false) }
     val updater = rememberPlatformUpdater(onDownloaded = { downloaded = true })
+    val serverRequired by signal.required.collectAsState()
     LaunchedEffect(checker) {
         decision = checker.check()
         if (decision == UpdateDecision.None && updater.startRecommendedUpdate()) decision = null
+    }
+    // The App Store page for the screen's button (iOS); the screen shows before the lookup answers
+    var serverStoreUrl by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(serverRequired) {
+        if (serverRequired) serverStoreUrl = checker.storeUrl()
+    }
+    if (serverRequired) {
+        RequiredUpdateDialog(texts = texts, onUpdate = { updater.openStore(serverStoreUrl) })
+        return
     }
     when (val current = decision) {
         is UpdateDecision.Required -> RequiredUpdateDialog(

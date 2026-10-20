@@ -54,6 +54,8 @@ data class SharingStrings(
     val inviteNotFound: String,
     /** A space that was deleted, or that the user was removed from (the server answers 404). */
     val errorNoAccess: String,
+    /** The backend's rate limit (429 `RATE_LIMITED`): a minute later the call goes through again. */
+    val errorRateLimited: String,
     val errorNetwork: String,
     val errorUnknown: String,
     /** Asks the server again after no connection or a server error. */
@@ -98,6 +100,7 @@ data class SharingStrings(
             inviteExpired = "This invite has expired. Ask for a new link.",
             inviteNotFound = "Invite not found.",
             errorNoAccess = "You no longer have access to this space",
+            errorRateLimited = "Too many requests. Please try again in a minute.",
             errorNetwork = "No connection",
             errorUnknown = "Something went wrong",
             retry = "Try again"
@@ -140,6 +143,7 @@ data class SharingStrings(
             inviteExpired = "Bu davetin süresi dolmuş. Yeni bir bağlantı iste.",
             inviteNotFound = "Davet bulunamadı.",
             errorNoAccess = "Bu alana artık erişimin yok",
+            errorRateLimited = "Çok fazla istek. Lütfen bir dakika sonra yeniden dene.",
             errorNetwork = "Bağlantı yok",
             errorUnknown = "Bir şeyler ters gitti",
             retry = "Tekrar dene"
@@ -183,6 +187,7 @@ data class SharingStrings(
             inviteExpired = "Esta invitación ha caducado. Pide un enlace nuevo.",
             inviteNotFound = "No se encontró la invitación.",
             errorNoAccess = "Ya no tienes acceso a este espacio",
+            errorRateLimited = "Demasiadas solicitudes. Inténtalo de nuevo en un minuto.",
             errorNetwork = "Sin conexión",
             errorUnknown = "Algo salió mal",
             retry = "Reintentar"
@@ -226,6 +231,7 @@ data class SharingStrings(
             inviteExpired = "Questo invito è scaduto. Chiedi un nuovo link.",
             inviteNotFound = "Invito non trovato.",
             errorNoAccess = "Non hai più accesso a questo spazio",
+            errorRateLimited = "Troppe richieste. Riprova tra un minuto.",
             errorNetwork = "Nessuna connessione",
             errorUnknown = "Qualcosa è andato storto",
             retry = "Riprova"
@@ -269,6 +275,7 @@ data class SharingStrings(
             inviteExpired = "Cette invitation a expiré. Demandez un nouveau lien.",
             inviteNotFound = "Invitation introuvable.",
             errorNoAccess = "Vous n’avez plus accès à cet espace",
+            errorRateLimited = "Trop de requêtes. Veuillez réessayer dans une minute.",
             errorNetwork = "Pas de connexion",
             errorUnknown = "Une erreur s’est produite",
             retry = "Réessayer"

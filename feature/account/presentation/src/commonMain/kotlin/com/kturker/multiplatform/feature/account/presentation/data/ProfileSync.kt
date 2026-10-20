@@ -24,11 +24,12 @@ fun interface ProfileSync {
 }
 
 /**
- * Drops the cached bearer token, then sends PUT /me/profile on [scope], an app-wide one: the sign-in screen, and
- * its ViewModel, closes as soon as the user is signed in. Once the server has the profile, [selectedSpace] reloads
- * (the app shell's own reload may have answered before the personal space got its localized name), unless another
- * user has signed in meanwhile. A failure only leaves the defaults in place (the token's name, the server's space
- * name).
+ * Drops the cached bearer token, then sends PUT me/profile on [scope], an app-wide one: the sign-in screen, and
+ * its ViewModel, closes as soon as the user is signed in. The profile always carries both values the app has now,
+ * the sign-in provider's display name (null for an email account) and the personal space's localized name: the
+ * backend replaces the display name on each PUT. Once the server has the profile, [selectedSpace] reloads (the app
+ * shell's own reload may have answered before the personal space got its localized name), unless another user has
+ * signed in meanwhile. A failure only leaves the defaults in place (no display name, the server's space name).
  */
 internal class BackendProfileSync(
     private val repository: AccountRepository,

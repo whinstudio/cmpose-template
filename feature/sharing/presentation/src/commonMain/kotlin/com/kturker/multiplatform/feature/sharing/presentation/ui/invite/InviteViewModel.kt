@@ -19,7 +19,9 @@ import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
 import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
 import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesRepository
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_NOT_FOUND
+import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_TOO_MANY_REQUESTS
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_UNAUTHORIZED
+import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_UPGRADE_REQUIRED
 import com.kturker.multiplatform.feature.sharing.presentation.ui.httpCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
+// The backend's INVITE_USED and INVITE_EXPIRED
 private const val HTTP_CONFLICT = 409
 private const val HTTP_GONE = 410
 
@@ -119,10 +122,13 @@ internal class InviteViewModel(
             auth.signOutAndForget(tokens, SignOutReason.SESSION_ENDED)
             return
         }
+        // A 426 (upgrade required) gets no message: the forced-update screen covers the app
         val message = when {
+            error.httpCode == HTTP_UPGRADE_REQUIRED -> null
             error.httpCode == HTTP_CONFLICT -> InviteMessage.USED
             error.httpCode == HTTP_GONE -> InviteMessage.EXPIRED
             error.httpCode == HTTP_NOT_FOUND -> InviteMessage.NOT_FOUND
+            error.httpCode == HTTP_TOO_MANY_REQUESTS -> InviteMessage.RATE_LIMITED
             error is DataError.Network -> InviteMessage.NETWORK
             else -> InviteMessage.UNKNOWN
         }

@@ -39,3 +39,23 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: iOS compile and unit tests (simulator)
         run: ./gradlew :shared:compileKotlinIosSimulatorArm64 iosSimulatorArm64Test
+# cmpose:backend
+
+  # server/ is generated from the cmpose backend template (an included build); the template repository has none.
+  # hashFiles needs the checkout, so the condition sits on the steps after it, not on the job.
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - if: hashFiles('server/settings.gradle.kts') != ''
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: hashFiles('server/settings.gradle.kts') != ''
+        uses: gradle/actions/setup-gradle@v6
+      - name: Server build and tests
+        if: hashFiles('server/settings.gradle.kts') != ''
+        run: ./gradlew :server:build
+# /cmpose:backend

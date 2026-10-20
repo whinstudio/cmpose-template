@@ -16,13 +16,16 @@ import io.ktor.http.contentType
 
 /** The backend calls the account screens make. */
 interface AccountRepository {
-    /** GET /spaces: every space the user is a member of, their own personal space included. */
+    /** GET spaces: every space the user is a member of, their own personal space included. */
     suspend fun spaces(): RestResult<List<Space>>
 
-    /** PUT /me/profile: the display name and the (localized) name of the personal space. */
+    /**
+     * PUT me/profile: the display name and the (localized) name of the personal space. The backend replaces the
+     * display name each time (null clears it), so the caller sends both current values, never only a changed one.
+     */
     suspend fun updateProfile(profile: Profile): RestResult<Unit>
 
-    /** DELETE /me: the server deletes the user, the spaces they own with their content, and their memberships. */
+    /** DELETE me: the server deletes the user, the spaces they own with their content, and their memberships. */
     suspend fun deleteServerAccount(): RestResult<Unit>
 }
 

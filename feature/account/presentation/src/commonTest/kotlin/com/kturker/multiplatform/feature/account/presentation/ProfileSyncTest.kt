@@ -97,7 +97,8 @@ class ProfileSyncTest {
         assertEquals("Personnel", repository.profiles.single().personalSpaceName)
     }
 
-    // Email accounts have no display name: the server keeps the one it has
+    // Email accounts have no display name: the backend's stays empty (it only ever comes from this sync), and the
+    // personal space is still named
     @Test
     fun withoutAFirebaseNameOnlyThePersonalSpaceIsNamed() = runTest {
         auth.displayName = " "

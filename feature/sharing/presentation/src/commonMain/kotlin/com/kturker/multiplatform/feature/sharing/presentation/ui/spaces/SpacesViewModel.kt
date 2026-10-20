@@ -93,10 +93,8 @@ internal class SpacesViewModel(
         when (val dialog = _state.value.dialog) {
             is SpacesDialog.ConfirmDelete -> change(refreshSelection = true) { repository.delete(dialog.space.id) }
 
-            is SpacesDialog.ConfirmLeave -> {
-                val uid = auth.currentUid() ?: return
-                change(refreshSelection = true) { repository.remove(dialog.space.id, uid) }
-            }
+            // The backend knows who is asking: no user id goes with it
+            is SpacesDialog.ConfirmLeave -> change(refreshSelection = true) { repository.leave(dialog.space.id) }
 
             else -> Unit
         }
@@ -129,7 +127,7 @@ internal class SpacesViewModel(
         when (val result = repository.list()) {
             is RestResult.Success -> _state.update {
                 it.copy(
-                    spaces = result.result.sortedByDescending(Space::isPersonal),
+                    spaces = result.result.sortedByDescending(Space::personal),
                     loading = false,
                     error = if (keepError) it.error else null
                 )

@@ -86,6 +86,9 @@ Another app may claim the same scheme; for a more unique one, use your package n
 
 - **Privacy policy and terms:** set `PRIVACY_POLICY_URL` and `TERMS_URL` in `core/about/.../LegalUrls.kt`. Both stores ask for a privacy policy URL; while a URL is empty its row stays hidden.
 - **Version:** raise `versionCode`/`versionName` in `build-logic/.../AppConfig.kt` and `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in `iosApp/Configuration/Config.xcconfig` together; the About row shows them.
+<!-- cmpose:backend -->
+- **Version and the server:** `MARKETING_VERSION` must equal `versionName`, and both must be `MAJOR.MINOR.PATCH` (for example `1.4.0`): the app sends it as `X-Client-Version` and the server's `MIN_CLIENT_VERSION` compares it, one version for both platforms. A version in any other form is not sent, so the server's minimum does not apply to that build.
+<!-- /cmpose:backend -->
 - **iOS privacy manifest:** `iosApp/iosApp/PrivacyInfo.xcprivacy` declares the required reason APIs this app's own code uses (the Kotlin code is linked into the app) and, with ads or purchases, the data they collect. When you add code or a Kotlin library that reads `UserDefaults`, file dates, disk space or the boot time, or collects data, update it. After an archive, Xcode's *Generate Privacy Report* lists every declaration, the SDKs' own included.
 - **App Store privacy form** (App Store Connect → App Privacy) and **Play data safety form:** answer them for the app as a whole, SDKs included; the privacy report is a starting point.
 - **Open source licences** are listed on their own screen (Settings, or About on the start screen); the list is generated from your dependencies on every build.
@@ -118,18 +121,23 @@ To add a table, add an `@Entity` and a `@Dao` in their own package, list the ent
 <!-- cmpose:backend -->
 ## Local server
 
-The Ktor server (`server/`) runs on your computer while the apps are tried on an emulator or simulator:
+The Ktor server (`server/`) is the cmpose backend template, generated into the project as an included build: its own
+`server/README.md` covers its layout, API conventions and configuration, `server/SECURITY-CHECKLIST.md` what every
+route needs, and `server/deploy/README.md` the deployment. It runs on your computer while the apps are tried on an
+emulator or simulator:
 
 - `./gradlew :server:runLocal` starts it on `127.0.0.1:18001` (loopback only, never on the network) with an
   embedded PostgreSQL 16. It prints `LOCAL_SERVER_READY port=18001` once it answers; Ctrl-C stops it.
-- Everything lives in `.local-server/` (not in git): `config.properties`, the database (`postgres/`) and the uploaded
-  files (`files/`). Data survives restarts.
+- Everything lives in the project's `.local-server/` (not in git; `localServerDir=../.local-server` in
+  `server/gradle.properties`): `config.properties`, the database (`postgres/`) and the uploaded files (`files/`).
+  Data survives restarts.
 - `config.properties` needs `firebaseProjectId=<Firebase project id>` and may set `port=<n>`. A missing file, a bad
   port or a busy port stops the runner with a message and exit code 1.
 - `./gradlew :server:resetLocal` deletes `.local-server/` (database, files and config) to start from scratch.
 
 The runner and the PostgreSQL binaries sit in the `local` source set, so the release jar (`:server:shadowJar`)
-carries neither.
+carries neither. `./gradlew :server:build` compiles the server and runs its detekt and its tests (an included build,
+so `./gradlew allTests` does not run them).
 
 ## Backend in the app
 
@@ -137,18 +145,24 @@ Sign-in is required: `MainScreen.kt` shows the sign-in screen while nobody is si
 after it (`SessionGate.kt`). When the user changes (sign-out, another account, a session the server ended), the app
 drops the cached token and the previous user's selected space.
 
-- `core/api`: the requests and answers the app and the server share (`ApiModels.kt`) and the paths (`ApiRoutes.kt`).
+- `core/api`: the app's client models of the backend API, its requests and answers (`ApiModels.kt`) and paths
+  (`ApiRoutes.kt`), checked against the server's OpenAPI description by `ApiContractTest`; the server does not use
+  them.
 - `core/auth`: Firebase Authentication (email and password, Google, Apple) and the signed-in user's ID token.
 - `core/network`: the backend's own `HttpClient`, named `BACKEND_CLIENT`; it sends the ID token to the backend's host
   only and retries once after a 401. The app's other `HttpClient` stays without a token. `BackendConfig.kt` holds the
   addresses: the local server in debug builds, `RELEASE_BASE_URL` (a placeholder) in release builds.
+- `core/network`, the server's answers: every request to the backend carries the app's `MAJOR.MINOR.PATCH` version
+  as `X-Client-Version`; a 426 (`CLIENT_UPGRADE_REQUIRED`, the app is below the server's `MIN_CLIENT_VERSION`) opens
+  the "Update required" screen (`core/update`); a 429 (`RATE_LIMITED`) shows "Too many requests. Please try again in
+  a minute.". `RELEASE_BASE_URL` must end in `/api/v1/` (the server serves its API there; request paths have no leading slash).
 - `core/image`: images the backend serves load with the token (`core/auth` adds the backend client's fetcher through
   an `ImageLoaderCustomizer`); `normalizeImageForUpload` turns a picked photo into a JPEG (at most 2048 px and 5 MB,
   HEIC included) before an upload.
 - `feature/account`: sign-in and account settings (sign-out, account deletion).
 - `feature/sharing`: the user's spaces, their members and invite links (`multiplatform://invite/<token>`); an invite
   opened while signed out shows after the sign-in.
-- `server`: the Ktor server (above).
+- `server/`: the Ktor server (above), an included build.
 
 **Reaching the local server** (debug builds; release builds use `RELEASE_BASE_URL`):
 
@@ -181,16 +195,20 @@ deep links are not gated and still open their screens over the sign-in screen.
 they can create more and invite others as editors or viewers through a link (single use, valid for 7 days). Roles
 rank `OWNER` > `EDITOR` > `VIEWER`. To a non-member a space does not exist: the server answers 404, never 403.
 
-**Adding a table** (see `server/src/test/.../ExampleItemRoutes.kt`, a reference that does not ship):
+**Adding a table** (copy the shape of `server/src/main/kotlin/.../files/`: repository, routes, migration, tests; then
+go through `server/SECURITY-CHECKLIST.md`):
 
-1. A Flyway migration, `server/src/main/resources/db/migration/V2__<feature>.sql`, creates the table with a
-   `space_id` column referencing `spaces(id) ON DELETE CASCADE`, so deleting a space deletes its rows.
-2. Its routes live under `/spaces/{id}/...`, inside the `authenticate(FIREBASE_AUTH)` block.
+1. A Flyway migration, `server/src/main/resources/db/migration/V<next>__<feature>.sql` (the number after the highest
+   one there), creates the table with a `space_id` column referencing `spaces(id) ON DELETE CASCADE`, so deleting a
+   space deletes its rows.
+2. Its routes live under `/api/v1/spaces/{id}/...`, registered next to the other routes in `Application.kt`, and are
+   described in `openapi/OpenApiSpec.kt` (`OpenApiTest` keeps the two in step).
 3. Every handler starts with `call.requireRole(spaces, call.parameters["id"].orEmpty(), Role.VIEWER)` (`Role.EDITOR`
    to write) and queries with the returned `membership.spaceId`, never with the raw path value. Do not check
    membership by hand.
-4. In the app, read the current space from `SelectedSpace` (`feature/sharing`) and call the routes with the
-   `BACKEND_CLIENT` HttpClient.
+4. In the app, add the requests, answers and paths to `core/api` and list them in `ApiContractTest`'s
+   `CLIENT_ROUTES` and `MODELS`: it checks only what is listed there against the server's API description. Read the
+   current space from `SelectedSpace` (`feature/sharing`) and call the routes with the `BACKEND_CLIENT` HttpClient.
 <!-- /cmpose:backend -->
 
 ## Modules
@@ -199,11 +217,11 @@ rank `OWNER` > `EDITOR` > `VIEWER`. To a non-member a space does not exist: the 
 - `:androidApp`: Android entry point (Application, Activity)
 - `:shared`: app shell: navigation graph, Koin start (`di/initKoin.kt`), the iOS framework
 <!-- cmpose:backend -->
-- `:server`: the Ktor backend and its local runner (`runLocal`)
-- `:core:api`: the requests, answers and paths the app and the server share
+- `:core:api`: the app's client models and routes for the backend API, checked by `ApiContractTest`
 - `:core:auth`: Firebase sign-in (email, Google, Apple) and the backend's ID token
 - `:feature:account`: contract, presentation
 - `:feature:sharing`: contract, presentation
+- `server/`: Ktor server from the cmpose backend template (an included build): sign-in check, spaces, sharing, files; `./gradlew :server:runLocal`; deploying: `server/deploy/README.md`
 <!-- /cmpose:backend -->
 <!-- /cmpose:modules -->
 

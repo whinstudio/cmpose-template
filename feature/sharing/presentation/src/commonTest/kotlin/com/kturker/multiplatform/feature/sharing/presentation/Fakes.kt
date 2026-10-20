@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import com.kturker.multiplatform.core.api.InviteLink
 import com.kturker.multiplatform.core.api.InvitePreview
+import com.kturker.multiplatform.core.api.Me
 import com.kturker.multiplatform.core.api.Member
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
@@ -27,17 +28,17 @@ import kotlinx.coroutines.flow.emptyFlow
 internal fun space(
     id: String,
     role: Role = Role.OWNER,
-    isPersonal: Boolean = false,
+    personal: Boolean = false,
     memberCount: Int = 1,
     name: String = id,
-) = Space(id = id, name = name, role = role, isPersonal = isPersonal, memberCount = memberCount)
+) = Space(id = id, name = name, role = role, personal = personal, memberCount = memberCount)
 
 internal fun member(
-    uid: String,
+    userId: String,
     role: Role = Role.EDITOR,
-    displayName: String? = uid,
+    displayName: String? = userId,
     email: String? = null,
-) = Member(uid = uid, displayName = displayName, email = email, role = role, joinedAt = 0)
+) = Member(userId = userId, displayName = displayName, email = email, role = role, joinedAt = 0)
 
 /** Only what the sharing screens use; each sign-out is appended to [log] with its reason. */
 internal class FakeAuthService(
@@ -87,9 +88,13 @@ internal class FakeSpacesRepository(val log: MutableList<String> = mutableListOf
     var membersResult: RestResult<List<Member>> = RestResult.Success(emptyList())
     var setRoleResult: RestResult<Unit> = RestResult.Success(Unit)
     var removeResult: RestResult<Unit> = RestResult.Success(Unit)
+    var leaveResult: RestResult<Unit> = RestResult.Success(Unit)
     var inviteResult: RestResult<InviteLink> = RestResult.Success(InviteLink(token = "tok", expiresAt = 0))
     var previewResult: RestResult<InvitePreview>? = null
     var acceptResult: RestResult<Space> = RestResult.Success(space("joined", role = Role.EDITOR))
+
+    /** The backend's own id for the signed-in user, unlike FakeAuthService's Firebase uid ("me"). */
+    var meResult: RestResult<Me> = RestResult.Success(Me(id = "backend-me"))
 
     override suspend fun list(): RestResult<List<Space>> = listResult.also { log += "list" }
 
@@ -102,11 +107,13 @@ internal class FakeSpacesRepository(val log: MutableList<String> = mutableListOf
 
     override suspend fun members(id: String): RestResult<List<Member>> = membersResult.also { log += "members:$id" }
 
-    override suspend fun setRole(id: String, uid: String, role: Role): RestResult<Unit> =
-        setRoleResult.also { log += "setRole:$id:$uid:$role" }
+    override suspend fun setRole(spaceId: String, userId: String, role: Role): RestResult<Unit> =
+        setRoleResult.also { log += "setRole:$spaceId:$userId:$role" }
 
-    override suspend fun remove(id: String, uid: String): RestResult<Unit> =
-        removeResult.also { log += "remove:$id:$uid" }
+    override suspend fun remove(spaceId: String, userId: String): RestResult<Unit> =
+        removeResult.also { log += "remove:$spaceId:$userId" }
+
+    override suspend fun leave(spaceId: String): RestResult<Unit> = leaveResult.also { log += "leave:$spaceId" }
 
     override suspend fun invite(id: String, role: Role): RestResult<InviteLink> =
         inviteResult.also { log += "invite:$id:$role" }
@@ -115,6 +122,8 @@ internal class FakeSpacesRepository(val log: MutableList<String> = mutableListOf
         checkNotNull(previewResult) { "no preview result set" }.also { log += "preview:$token" }
 
     override suspend fun accept(token: String): RestResult<Space> = acceptResult.also { log += "accept:$token" }
+
+    override suspend fun me(): RestResult<Me> = meResult.also { log += "me" }
 }
 
 /** Records select and refresh in [log]; [current] is set by the test. */

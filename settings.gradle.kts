@@ -86,6 +86,7 @@ include(":feature:sample:data")
 include(":feature:sample:domain")
 include(":feature:sample:presentation")
 // cmpose:backend
-include(":server")
+// server/ is generated from the cmpose backend template (an included build); the template repository has none
+if (file("server/settings.gradle.kts").exists()) includeBuild("server")
 // /cmpose:backend
 includeBuild("build-logic")

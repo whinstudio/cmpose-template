@@ -8,7 +8,4 @@ plugins {
     alias(libs.plugins.androidKotlinMultiplatformLibrary) apply false
     alias(libs.plugins.androidLint) apply false
     alias(libs.plugins.aboutLibraries) apply false
-    // cmpose:backend
-    alias(libs.plugins.shadow) apply false
-    // /cmpose:backend
 }

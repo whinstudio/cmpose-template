@@ -8,15 +8,29 @@ import com.kturker.multiplatform.core.multilang.resource.AccountStrings
 import com.kturker.multiplatform.core.multilang.resource.account
 
 /** What the account screens tell the user; each one has a message in [AccountStrings] ([uiErrorText]). */
-internal enum class UiError { NETWORK, INVALID_CREDENTIALS, PROVIDER_REJECTED, EMAIL_IN_USE, WEAK_PASSWORD, UNKNOWN }
+internal enum class UiError {
+    NETWORK,
+    INVALID_CREDENTIALS,
+    PROVIDER_REJECTED,
+    EMAIL_IN_USE,
+    WEAK_PASSWORD,
+    RATE_LIMITED,
+    UNKNOWN
+}
 
 private const val UNAUTHORIZED = 401
+
+// The backend's 429 `RATE_LIMITED` (DELETE me counts against its strict limiter)
+private const val TOO_MANY_REQUESTS = 429
 
 /** A 401 that survived the token refresh: the session is gone and the user has to sign in again. */
 internal val DataError.isUnauthorized: Boolean get() = this is DataError.Http && code == UNAUTHORIZED
 
-internal fun DataError.toUiError(): UiError =
-    if (this is DataError.Network) UiError.NETWORK else UiError.UNKNOWN
+internal fun DataError.toUiError(): UiError = when {
+    this is DataError.Network -> UiError.NETWORK
+    this is DataError.Http && code == TOO_MANY_REQUESTS -> UiError.RATE_LIMITED
+    else -> UiError.UNKNOWN
+}
 
 // Firebase switched the method off, is throttling the device, or has no config: nothing a retry fixes, so the
 // general message (the sign-in screen explains a missing config on its own)
@@ -35,6 +49,7 @@ internal fun UiError.message(strings: AccountStrings): String = when (this) {
     UiError.PROVIDER_REJECTED -> strings.errorProviderRejected
     UiError.EMAIL_IN_USE -> strings.errorEmailInUse
     UiError.WEAK_PASSWORD -> strings.errorWeakPassword
+    UiError.RATE_LIMITED -> strings.errorRateLimited
     UiError.UNKNOWN -> strings.errorUnknown
 }
 

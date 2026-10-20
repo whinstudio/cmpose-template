@@ -14,7 +14,7 @@ class SelectedSpaceTest {
     private val dataStore = InMemoryPreferences()
     private val repository = FakeSpacesRepository()
 
-    private val personal = space("personal", isPersonal = true)
+    private val personal = space("personal", personal = true)
     private val home = space("home", role = Role.EDITOR, memberCount = 2)
 
     private fun selectedSpace() = PersistedSelectedSpace(repository, dataStore)

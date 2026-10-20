@@ -7,8 +7,14 @@ import co.touchlab.kermit.TestLogWriter
 import co.touchlab.kermit.platformLogWriter
 import com.kturker.multiplatform.core.domain.DataError
 import com.kturker.multiplatform.core.domain.RestResult
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.get
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
@@ -43,6 +49,28 @@ class BaseRepositoryTest {
         val result = repository.request<String> { throw responseException(HttpStatusCode.Forbidden) }
 
         assertEquals(RestResult.Error(DataError.Http(code = 403)), result)
+    }
+
+    // The backend's {"error":{"code":…}} body: the code tells a ViewModel which failure it is
+    @Test
+    fun aFailedCallKeepsTheServersErrorCode() = runTest {
+        val client = failingClient(
+            status = HttpStatusCode.Conflict,
+            body = """{"error":{"code":"INVITE_USED","message":"Already used","requestId":"r1"}}"""
+        )
+
+        val result = repository.request<String> { client.get("invites/abc") }
+
+        assertEquals(RestResult.Error(DataError.Http(code = 409, apiCode = "INVITE_USED")), result)
+    }
+
+    @Test
+    fun aNonJsonErrorBodyLeavesTheCodeNull() = runTest {
+        val client = failingClient(status = HttpStatusCode.BadGateway, body = "<html>Bad gateway</html>")
+
+        val result = repository.request<String> { client.get("spaces") }
+
+        assertEquals(RestResult.Error(DataError.Http(code = 502)), result)
     }
 
     @Test
@@ -103,5 +131,12 @@ class BaseRepositoryTest {
         }
 
         writer.assertCount(0)
+    }
+
+    // expectSuccess, like the app's clients: a status outside 2xx throws a ResponseException
+    private fun failingClient(status: HttpStatusCode, body: String) = HttpClient(
+        MockEngine { respond(body, status, headersOf(HttpHeaders.ContentType, "application/json")) }
+    ) {
+        expectSuccess = true
     }
 }

@@ -11,7 +11,7 @@ fun inviteUrl(
 
 /**
  * Whether [token] can be an invite token: the server issues base64url ones (letters, digits, `-` and `_`). Anything
- * else, an empty token or one with a `/` in it, never reaches the server's paths.
+ * else, an empty token or one with a `/` in it, never reaches the server (which gets the token in the request body).
  */
 internal fun isInviteToken(token: String): Boolean =
     token.isNotEmpty() && token.all { it.isBase64Url() }

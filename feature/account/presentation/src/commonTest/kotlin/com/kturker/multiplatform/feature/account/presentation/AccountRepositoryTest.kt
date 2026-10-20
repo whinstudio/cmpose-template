@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.account.presentation
 
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Profile
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
@@ -25,9 +26,12 @@ import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class AccountRepositoryTest {
 
@@ -37,7 +41,7 @@ class AccountRepositoryTest {
 
     private val requests = mutableListOf<HttpRequestData>()
 
-    // A base URL with a path prefix: request paths must stay under it
+    // The base URL ends in the API prefix: request paths must stay under it
     private fun repository(
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData
     ): AccountRepository {
@@ -45,7 +49,15 @@ class AccountRepositoryTest {
             requests += request
             handler(request)
         }
-        return KtorAccountRepository(buildBackendClient(engine, BASE, Tokens, isDebug = false))
+        val client = buildBackendClient(
+            engine = engine,
+            baseUrl = BASE,
+            tokens = Tokens,
+            isDebug = false,
+            clientVersion = "1.0.0",
+            onUpgradeRequired = {}
+        )
+        return KtorAccountRepository(client)
     }
 
     // On real time: runTest's virtual clock would fire HttpTimeout before MockEngine answers on another dispatcher
@@ -56,19 +68,21 @@ class AccountRepositoryTest {
         respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
 
     @Test
-    fun spacesReadsTheListUnderTheBaseUrlPrefix() = apiTest {
+    fun spacesReadsTheListUnderTheApiPrefix() = apiTest {
         val result = repository {
-            json("""[{"id":"s1","name":"Home","role":"owner","isPersonal":false,"memberCount":3}]""")
+            json("""[{"id":"s1","name":"Home","role":"owner","personal":false,"memberCount":3}]""")
         }.spaces()
 
         assertEquals("${BASE}spaces", requests.single().url.toString())
+        assertTrue(requests.single().url.encodedPath.startsWith("/api/v1/"))
         assertEquals(HttpMethod.Get, requests.single().method)
         assertEquals(
-            listOf(Space("s1", "Home", Role.OWNER, isPersonal = false, memberCount = 3)),
+            listOf(Space("s1", "Home", Role.OWNER, personal = false, memberCount = 3)),
             assertIs<RestResult.Success<List<Space>>>(result).result
         )
     }
 
+    // The backend replaces the display name on every PUT (a missing one clears it): both fields always go
     @Test
     fun updateProfilePutsTheProfile() = apiTest {
         val result = repository { respond("", HttpStatusCode.NoContent) }
@@ -77,11 +91,24 @@ class AccountRepositoryTest {
         val request = requests.single()
         assertEquals(HttpMethod.Put, request.method)
         assertEquals("${BASE}me/profile", request.url.toString())
+        assertTrue(request.url.encodedPath.startsWith("/api/v1/"))
+        val body = Json.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
+        assertEquals(setOf("displayName", "personalSpaceName"), body.keys)
         assertEquals(
             Profile(displayName = "Ada", personalSpaceName = "Personal"),
-            Json.decodeFromString<Profile>(request.body.toByteArray().decodeToString())
+            Json.decodeFromJsonElement<Profile>(body)
         )
         assertIs<RestResult.Success<Unit>>(result)
+    }
+
+    // Without a name (an email account) the profile still names the personal space; the backend clears the name
+    @Test
+    fun updateProfileWithoutADisplayNameStillNamesThePersonalSpace() = apiTest {
+        repository { respond("", HttpStatusCode.NoContent) }
+            .updateProfile(Profile(displayName = null, personalSpaceName = "Personal"))
+
+        val body = Json.decodeFromString<Profile>(requests.single().body.toByteArray().decodeToString())
+        assertEquals(Profile(displayName = null, personalSpaceName = "Personal"), body)
     }
 
     @Test
@@ -90,6 +117,7 @@ class AccountRepositoryTest {
 
         assertEquals(HttpMethod.Delete, requests.single().method)
         assertEquals("${BASE}me", requests.single().url.toString())
+        assertTrue(requests.single().url.encodedPath.startsWith("/api/v1/"))
         assertIs<RestResult.Success<Unit>>(result)
     }
 
@@ -100,7 +128,21 @@ class AccountRepositoryTest {
         assertEquals(DataError.Http(500), assertIs<RestResult.Error>(result).error)
     }
 
+    // The backend's error body fills in its code
+    @Test
+    fun aRateLimitedAnswerCarriesItsCode() = apiTest {
+        val result = repository {
+            respond(
+                """{"error":{"code":"RATE_LIMITED","message":"Too many requests","requestId":"r1"}}""",
+                HttpStatusCode.TooManyRequests,
+                headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }.deleteServerAccount()
+
+        assertEquals(DataError.Http(429, ErrorCodes.RATE_LIMITED), assertIs<RestResult.Error>(result).error)
+    }
+
     private companion object {
-        const val BASE = "https://example.com/api/"
+        const val BASE = "https://example.com/api/v1/"
     }
 }

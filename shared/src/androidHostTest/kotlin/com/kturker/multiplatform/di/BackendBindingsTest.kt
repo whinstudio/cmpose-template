@@ -2,6 +2,9 @@
 
 package com.kturker.multiplatform.di
 
+import com.kturker.multiplatform.core.about.AppInfo
+import com.kturker.multiplatform.core.about.AppVersion
+import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.domain.BuildEnvironment
 import com.kturker.multiplatform.core.network.BACKEND_CLIENT
@@ -42,12 +45,17 @@ class BackendBindingsTest {
         assertTrue(TokenSource::class in auth.secondaryTypes)
     }
 
-    // Resolved, not only declared: its engine, the build type and the token source all come from the graph.
-    // The token source is a stand-in here: the real one asks Android for a Context, which a host test has not.
+    // Resolved, not only declared: its engine, the build type, the app's version and the token source all come from
+    // the graph. The token source and the app info are stand-ins here: the real ones ask Android for a Context,
+    // which a host test has not.
     @Test
     fun theBackendClientResolvesFromTheAppModules() {
         val tokens = object : TokenSource {
             override suspend fun token(forceRefresh: Boolean): String? = null
+        }
+        val appInfo = object : AppInfo {
+            override val version = AppVersion(name = "1.0.0", code = "1")
+            override val legalLinks = emptyList<LegalLink>()
         }
         val koin = koinApplication {
             allowOverride(true)
@@ -56,6 +64,7 @@ class BackendBindingsTest {
                 module {
                     single { BuildEnvironment(isDebug = false) }
                     single<TokenSource> { tokens }
+                    single<AppInfo> { appInfo }
                 }
             )
         }.koin

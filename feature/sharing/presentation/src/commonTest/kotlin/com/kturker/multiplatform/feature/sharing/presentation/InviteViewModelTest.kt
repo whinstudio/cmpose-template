@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.sharing.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.InvitePreview
 import com.kturker.multiplatform.core.api.InviteState
 import com.kturker.multiplatform.core.api.Role
@@ -61,7 +62,9 @@ class InviteViewModelTest {
     )
 
     private fun preview(state: InviteState) =
-        RestResult.Success(InvitePreview(spaceName = "Home", inviterName = "Ada", role = Role.EDITOR, state = state))
+        RestResult.Success(
+            InvitePreview(spaceName = "Home", inviterName = "Ada", role = Role.EDITOR, expiresAt = 0, state = state)
+        )
 
     @Test
     fun aValidInviteShowsItsPreview() = runTest {
@@ -138,7 +141,7 @@ class InviteViewModelTest {
     @Test
     fun acceptingAnInviteThatWasUsedOrExpiredMeanwhileExplainsItself() = runTest {
         repository.previewResult = preview(InviteState.VALID)
-        repository.acceptResult = RestResult.Error(DataError.Http(409))
+        repository.acceptResult = RestResult.Error(DataError.Http(409, ErrorCodes.INVITE_USED))
         val usedMeanwhile = viewModel()
         advanceUntilIdle()
 
@@ -147,7 +150,7 @@ class InviteViewModelTest {
         assertEquals(InviteMessage.USED, usedMeanwhile.state.value.message)
         assertFalse(usedMeanwhile.state.value.canAccept)
 
-        repository.acceptResult = RestResult.Error(DataError.Http(410))
+        repository.acceptResult = RestResult.Error(DataError.Http(410, ErrorCodes.INVITE_EXPIRED))
         val expiredMeanwhile = viewModel()
         advanceUntilIdle()
         expiredMeanwhile.accept()
@@ -156,6 +159,32 @@ class InviteViewModelTest {
 
         assertFalse("select:joined" in log)
         assertTrue(navigation.commands.isEmpty())
+    }
+
+    // 426 opens the app-wide forced-update screen; the invite adds no message under it
+    @Test
+    fun upgradeRequiredShowsNoMessage() = runTest {
+        repository.previewResult = RestResult.Error(DataError.Http(426, ErrorCodes.CLIENT_UPGRADE_REQUIRED))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.message)
+        assertFalse(viewModel.state.value.loading)
+        assertFalse(viewModel.state.value.canAccept)
+        assertTrue(log.none { it.startsWith("signOut") })
+    }
+
+    // Every invite call counts against the backend's strict limiter
+    @Test
+    fun rateLimitedSaysTryLaterAndCanBeRetried() = runTest {
+        repository.previewResult = RestResult.Error(DataError.Http(429, ErrorCodes.RATE_LIMITED))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(InviteMessage.RATE_LIMITED, viewModel.state.value.message)
+        assertTrue(viewModel.state.value.canRetry)
     }
 
     @Test

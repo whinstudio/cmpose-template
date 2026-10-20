@@ -68,6 +68,39 @@ class MembersViewModelTest {
         assertEquals("home", viewModel.state.value.space?.id)
     }
 
+    // "(you)" follows GET /me: the backend's own id for the user, which is not the sign-in provider's uid
+    @Test
+    fun youIsTheBackendUserNotTheFirebaseUid() = runTest {
+        val backendMe = member("backend-me", role = Role.OWNER)
+        // Someone whose backend id happens to equal the Firebase uid (FakeAuthService's "me")
+        val firebaseNamesake = member("me")
+        repository.membersResult = RestResult.Success(listOf(backendMe, firebaseNamesake))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertTrue("me" in log)
+        assertEquals("backend-me", state.myUserId)
+        assertTrue(state.isYou(backendMe))
+        assertFalse(state.isYou(firebaseNamesake))
+    }
+
+    // Without an answer from GET /me the list still shows; only the "(you)" mark is missing
+    @Test
+    fun aFailedMeStillListsTheMembers() = runTest {
+        repository.meResult = RestResult.Error(DataError.Network)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertEquals(listOf(me, bob), state.members)
+        assertEquals(null, state.myUserId)
+        assertEquals(null, state.error)
+        assertFalse(state.members.any { state.isYou(it) })
+    }
+
     @Test
     fun theOwnerManagesOthersAndShares() = runTest {
         val viewModel = viewModel()
@@ -176,7 +209,7 @@ class MembersViewModelTest {
 
     @Test
     fun aSpaceNoLongerInTheListHasNoAccess() = runTest {
-        repository.listResult = RestResult.Success(listOf(space("personal", isPersonal = true)))
+        repository.listResult = RestResult.Success(listOf(space("personal", personal = true)))
 
         val viewModel = viewModel()
         advanceUntilIdle()

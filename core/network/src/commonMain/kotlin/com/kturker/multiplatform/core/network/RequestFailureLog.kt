@@ -9,8 +9,8 @@ private val log = Logger.withTag("Network")
 // and exception's types are written: never the URL, headers, body or message, which can carry user
 // data or tokens.
 @PublishedApi
-internal fun Exception.toLoggedDataError(): DataError {
-    val error = toDataError()
+internal suspend fun Exception.toLoggedDataError(): DataError {
+    val error = toDataErrorWithApiCode()
     log.w { "Request failed: ${error.describe(exception = this)}" }
     return error
 }

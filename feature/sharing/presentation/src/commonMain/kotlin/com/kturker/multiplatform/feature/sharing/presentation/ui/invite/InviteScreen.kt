@@ -75,6 +75,7 @@ private fun InviteMessage.text(strings: SharingStrings): String = when (this) {
     InviteMessage.USED -> strings.inviteUsed
     InviteMessage.EXPIRED -> strings.inviteExpired
     InviteMessage.NOT_FOUND -> strings.inviteNotFound
+    InviteMessage.RATE_LIMITED -> strings.errorRateLimited
     InviteMessage.NETWORK -> strings.errorNetwork
     InviteMessage.UNKNOWN -> strings.errorUnknown
 }

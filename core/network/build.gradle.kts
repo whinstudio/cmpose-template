@@ -24,9 +24,8 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kermit.test)
-            // cmpose:backend
+            // MockEngine: BaseRepositoryTest (with or without the backend) and the backend client's tests
             implementation(libs.ktor.client.mock)
-            // /cmpose:backend
         }
 
         androidMain.dependencies {

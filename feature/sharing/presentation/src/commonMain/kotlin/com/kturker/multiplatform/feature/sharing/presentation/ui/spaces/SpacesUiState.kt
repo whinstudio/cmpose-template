@@ -16,7 +16,7 @@ internal data class SpacesUiState(
     fun canRename(space: Space): Boolean = space.role == Role.OWNER
 
     // The personal space goes only with the account
-    fun canDelete(space: Space): Boolean = space.role == Role.OWNER && !space.isPersonal
+    fun canDelete(space: Space): Boolean = space.role == Role.OWNER && !space.personal
 
     // The owner deletes a space instead; a member leaves even someone's personal space
     fun canLeave(space: Space): Boolean = space.role != Role.OWNER

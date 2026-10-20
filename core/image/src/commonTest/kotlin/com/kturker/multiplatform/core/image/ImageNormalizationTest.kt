@@ -7,7 +7,7 @@ import kotlin.test.assertSame
 
 class ImageNormalizationTest {
 
-    // The same limit as the server's: a bigger upload would be refused there
+    // Within the backend template's default upload limit (MAX_UPLOAD_BYTES): the server takes every normalized image
     @Test
     fun theUploadLimitIs5Mb() {
         assertEquals(5 * 1024 * 1024, MAX_IMAGE_BYTES)

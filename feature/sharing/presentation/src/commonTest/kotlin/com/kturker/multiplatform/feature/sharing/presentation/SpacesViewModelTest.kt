@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.sharing.presentation
 
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.auth.SignOutReason
 import com.kturker.multiplatform.core.domain.DataError
@@ -33,7 +34,7 @@ class SpacesViewModelTest {
     private val selectedSpace = FakeSelectedSpace(log)
     private val navigation = RecordingNavigationManager()
 
-    private val personal = space("personal", isPersonal = true)
+    private val personal = space("personal", personal = true)
     private val owned = space("owned", memberCount = 3)
     private val joined = space("joined", role = Role.EDITOR, memberCount = 2)
 
@@ -195,16 +196,19 @@ class SpacesViewModelTest {
         assertTrue("refresh" in log)
     }
 
+    // POST /spaces/{id}/leave: the server knows who is asking, the app sends no user id
     @Test
-    fun leavingRemovesTheUserThemselves() = runTest {
+    fun leavingCallsLeave() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.requestLeave(joined)
+        assertEquals(SpacesDialog.ConfirmLeave(joined), viewModel.state.value.dialog)
         viewModel.confirm()
         advanceUntilIdle()
 
-        assertTrue("remove:joined:me" in log)
+        assertTrue("leave:joined" in log)
+        assertTrue(log.none { it.startsWith("remove") })
         assertTrue("refresh" in log)
     }
 
@@ -231,6 +235,30 @@ class SpacesViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("list", "signOut:${SignOutReason.SESSION_ENDED}", "forgetToken"), log)
+    }
+
+    // 429 RATE_LIMITED: the backend's limiter, not a broken request
+    @Test
+    fun rateLimitedSaysTryLater() = runTest {
+        repository.listResult = RestResult.Error(DataError.Http(429, ErrorCodes.RATE_LIMITED))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(SharingError.RATE_LIMITED, viewModel.state.value.error)
+        assertTrue(log.none { it.startsWith("signOut") })
+    }
+
+    // 426 opens the app-wide forced-update screen (the client calls it); this screen adds no message of its own
+    @Test
+    fun upgradeRequiredShowsNoMessage() = runTest {
+        repository.listResult = RestResult.Error(DataError.Http(426, ErrorCodes.CLIENT_UPGRADE_REQUIRED))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.error)
+        assertFalse(viewModel.state.value.loading)
     }
 
     @Test

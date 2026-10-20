@@ -33,6 +33,8 @@ data class AccountStrings(
     val cancel: String,
     /** The name the server gives the user's own space, in the app's language. */
     val personalSpace: String,
+    /** The backend's rate limit (429 `RATE_LIMITED`): a minute later the call goes through again. */
+    val errorRateLimited: String,
     val errorNetwork: String,
     val errorInvalidCredentials: String,
     /** Firebase refused the Google or Apple account (not a typed password). */
@@ -66,6 +68,7 @@ data class AccountStrings(
             back = "Back",
             cancel = "Cancel",
             personalSpace = "Personal",
+            errorRateLimited = "Too many requests. Please try again in a minute.",
             errorNetwork = "No connection",
             errorInvalidCredentials = "Wrong email or password",
             errorProviderRejected = "Could not sign in with this account",
@@ -96,6 +99,7 @@ data class AccountStrings(
             back = "Geri",
             cancel = "Vazgeç",
             personalSpace = "Kişisel",
+            errorRateLimited = "Çok fazla istek. Lütfen bir dakika sonra yeniden dene.",
             errorNetwork = "Bağlantı yok",
             errorInvalidCredentials = "E-posta ya da şifre yanlış",
             errorProviderRejected = "Bu hesapla giriş yapılamadı",
@@ -128,6 +132,7 @@ data class AccountStrings(
             back = "Atrás",
             cancel = "Cancelar",
             personalSpace = "Personal",
+            errorRateLimited = "Demasiadas solicitudes. Inténtalo de nuevo en un minuto.",
             errorNetwork = "Sin conexión",
             errorInvalidCredentials = "Correo o contraseña incorrectos",
             errorProviderRejected = "No se pudo iniciar sesión con esta cuenta",
@@ -160,6 +165,7 @@ data class AccountStrings(
             back = "Indietro",
             cancel = "Annulla",
             personalSpace = "Personale",
+            errorRateLimited = "Troppe richieste. Riprova tra un minuto.",
             errorNetwork = "Nessuna connessione",
             errorInvalidCredentials = "Email o password errati",
             errorProviderRejected = "Impossibile accedere con questo account",
@@ -192,6 +198,7 @@ data class AccountStrings(
             back = "Retour",
             cancel = "Annuler",
             personalSpace = "Personnel",
+            errorRateLimited = "Trop de requêtes. Veuillez réessayer dans une minute.",
             errorNetwork = "Pas de connexion",
             errorInvalidCredentials = "E-mail ou mot de passe incorrect",
             errorProviderRejected = "Connexion impossible avec ce compte",

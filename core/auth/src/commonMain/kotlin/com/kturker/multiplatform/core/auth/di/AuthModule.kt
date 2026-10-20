@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.core.auth.di
 
+import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.BackendImageLoaderCustomizer
 import com.kturker.multiplatform.core.auth.FirebaseAuthService
@@ -16,6 +17,7 @@ import com.kturker.multiplatform.core.network.BackendConfig
 import com.kturker.multiplatform.core.network.TokenSource
 import com.kturker.multiplatform.core.network.buildBackendClient
 import com.kturker.multiplatform.core.network.forgetToken
+import com.kturker.multiplatform.core.update.ForcedUpdateSignal
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
 import io.ktor.client.HttpClient
@@ -53,19 +55,25 @@ class AuthModule {
     @Single
     fun provideFirebaseAvailability(): FirebaseAvailability = platformFirebaseAvailability()
 
-    // The backend's HttpClient (the server module): the signed-in user's ID token goes to the backend's host
-    // only. The app's other HttpClient (core:network, unnamed) stays without a token.
+    // The backend's HttpClient (the server module): the signed-in user's ID token and the app's version go to the
+    // backend's host only. The app's other HttpClient (core:network, unnamed) stays without them. A 426 from the
+    // backend raises the forced-update screen (core:update's AppUpdateEffect). The version comes from core:about's
+    // AppInfo, through the graph: a test can stand in for it (Android reads it from the app's Context).
     @Single
     @Named(BACKEND_CLIENT)
     fun provideBackendClient(
         @Provided engine: HttpClientEngine,
         @Provided environment: BuildEnvironment,
+        @Provided signal: ForcedUpdateSignal,
+        @Provided appInfo: AppInfo,
         tokens: TokenSource
     ): HttpClient = buildBackendClient(
         engine = engine,
         baseUrl = BackendConfig.baseUrl(environment),
         tokens = tokens,
-        isDebug = environment.isDebug
+        isDebug = environment.isDebug,
+        clientVersion = appInfo.version.name,
+        onUpgradeRequired = signal::raise
     )
 
     // core:image's ImageLoader loads network images through the backend client (its bearer token, its host only)

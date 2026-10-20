@@ -84,7 +84,7 @@ private fun MembersScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(state.members, key = Member::uid) { member ->
+                items(state.members, key = Member::userId) { member ->
                     MemberCard(member = member, state = state, actions = actions)
                 }
             }
@@ -109,7 +109,7 @@ private fun MemberCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                val you = if (member.uid == state.myUid) " ${strings.you}" else ""
+                val you = if (state.isYou(member)) " ${strings.you}" else ""
                 Text(member.shownName + you, style = MaterialTheme.typography.titleMedium)
                 Text(member.role.label(strings), style = MaterialTheme.typography.bodySmall)
             }

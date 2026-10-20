@@ -15,7 +15,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * [SelectedSpace] with the chosen space's id in DataStore. Each [refresh] reads GET /spaces and shows the stored
+ * [SelectedSpace] with the chosen space's id in DataStore. Each [refresh] reads GET spaces and shows the stored
  * space while the user is still a member of it, otherwise the personal space, which it then stores. A failed
  * refresh (offline) keeps the space shown.
  */
@@ -48,7 +48,7 @@ internal class PersistedSelectedSpace(
     private suspend fun load() {
         val spaces = (repository.list() as? RestResult.Success)?.result ?: return
         val stored = dataStore.data.first()[key]
-        val chosen = spaces.firstOrNull { it.id == stored } ?: spaces.firstOrNull { it.isPersonal }
+        val chosen = spaces.firstOrNull { it.id == stored } ?: spaces.firstOrNull { it.personal }
         if (chosen != null && chosen.id != stored) dataStore.edit { it[key] = chosen.id }
         _current.value = chosen
     }

@@ -33,15 +33,6 @@ androidx-work = "2.12.0"
 aboutLibraries = "14.2.1"
 playAppUpdate = "2.1.0"
 # cmpose:backend
-jwksRsa = "0.22.1"
-exposed = "0.61.0"
-flyway = "11.10.4"
-postgresql = "42.7.7"
-hikari = "6.3.0"
-logback = "1.5.18"
-embeddedPostgres = "2.1.0"
-embeddedPostgresBinaries = "16.15.0"
-shadow = "9.5.1"
 # GitLive Firebase KMP SDK: 2.7.0 is the newest 2.x (built with Kotlin 2.2.21, which Kotlin 2.3.21 reads;
 # 3.0.0 is alpha and needs Kotlin 2.4). Its Android side uses Firebase BoM 34.18.0, its iOS side was
 # built against firebase-ios-sdk 11.8.0 (the app links FirebaseAuth through SPM, 11.x)
@@ -91,31 +82,9 @@ ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "kto
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientCore" }
 # cmpose:backend
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktorClientCore" }
+# /cmpose:backend
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktorClientCore" }
-# /cmpose:backend
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClientCore" }
-# cmpose:backend
-
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktorClientCore" }
-ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktorClientCore" }
-ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktorClientCore" }
-ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktorClientCore" }
-ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktorClientCore" }
-ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktorClientCore" }
-ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktorClientCore" }
-ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktorClientCore" }
-jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "jwksRsa" }
-exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
-flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
-flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
-hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-embedded-postgres = { module = "io.zonky.test:embedded-postgres", version.ref = "embeddedPostgres" }
-# PostgreSQL 16 binaries for embedded-postgres (newest 16.x on Maven Central, pinned)
-embedded-postgres-bom = { module = "io.zonky.test.postgres:embedded-postgres-binaries-bom", version.ref = "embeddedPostgresBinaries" }
-# /cmpose:backend
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
@@ -172,6 +141,5 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutLibraries" }
 # cmpose:backend
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 # /cmpose:backend

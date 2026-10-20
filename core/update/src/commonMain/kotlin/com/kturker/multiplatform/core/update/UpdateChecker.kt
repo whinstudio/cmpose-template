@@ -37,6 +37,11 @@ class UpdateChecker(private val store: UpdateCheckStore) {
         log.i { "Update decision: ${decision.logName()}" }
         return decision
     }
+
+    // Where "Update" leads when the server asks for a newer version (ForcedUpdateSignal): the App Store page on
+    // iOS, null when the lookup finds none; null on Android, where Play's page is opened without a URL
+    suspend fun storeUrl(): String? =
+        if (currentUpdatePlatform == UpdatePlatform.Ios) fetchStoreRelease()?.storeUrl else null
 }
 
 private suspend fun fetchMinVersions(): MinVersions? {

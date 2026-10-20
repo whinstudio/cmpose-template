@@ -30,7 +30,8 @@ import org.koin.core.annotation.Provided
 
 /**
  * A space's members. The owner changes roles, removes members and shares invite links: Share asks for the role,
- * creates a single-use link (POST /spaces/{id}/invites) and hands "<text>: <link>" to the platform's share sheet.
+ * creates a single-use link (POST spaces/{id}/invites) and hands "<text>: <link>" to the platform's share sheet.
+ * "(you)" marks the member whose id is the backend's id for the signed-in user (GET me).
  */
 @KoinViewModel
 internal class MembersViewModel(
@@ -50,7 +51,7 @@ internal class MembersViewModel(
     private val spaceId: String =
         checkNotNull(savedStateHandle[MembersDestination::spaceId.name]) { "spaceId missing" }
 
-    private val _state = MutableStateFlow(MembersUiState(myUid = auth.currentUid()))
+    private val _state = MutableStateFlow(MembersUiState())
     val state: StateFlow<MembersUiState> = _state.asStateFlow()
 
     private val failures = BackendFailures(auth, tokens, selectedSpace)
@@ -81,7 +82,7 @@ internal class MembersViewModel(
     override fun changeRole(
         member: Member,
         role: Role
-    ) = act(reload = true) { repository.setRole(spaceId, member.uid, role) }
+    ) = act(reload = true) { repository.setRole(spaceId, member.userId, role) }
 
     override fun requestRemove(member: Member) =
         _state.update { it.copy(removing = member, error = null) }
@@ -90,7 +91,7 @@ internal class MembersViewModel(
 
     override fun confirmRemove() {
         val member = _state.value.removing ?: return
-        act(reload = true) { repository.remove(spaceId, member.uid) }
+        act(reload = true) { repository.remove(spaceId, member.userId) }
     }
 
     private fun act(
@@ -103,7 +104,7 @@ internal class MembersViewModel(
             val result = call()
             val failed = result is RestResult.Error
             // A 404: the space is gone, or only the target member is (they left meanwhile). load() tells the two
-            // apart through GET /spaces and otherwise shows the current list.
+            // apart through GET spaces and otherwise shows the current list.
             if (failed && (result as RestResult.Error).error.httpCode != HTTP_NOT_FOUND) {
                 val error = failures.handle(result.error)
                 _state.update { it.copy(busy = false, error = error) }
@@ -114,8 +115,9 @@ internal class MembersViewModel(
         }
     }
 
-    // The space (its name, the user's role) comes from GET /spaces; one missing from it is gone for this user
+    // The space (its name, the user's role) comes from GET spaces; one missing from it is gone for this user
     private suspend fun load() {
+        loadMe()
         val spaces = repository.list()
         if (spaces is RestResult.Error) return fail(spaces)
         val space = (spaces as? RestResult.Success)?.result?.firstOrNull { it.id == spaceId }
@@ -132,6 +134,13 @@ internal class MembersViewModel(
 
             is RestResult.Loading -> Unit
         }
+    }
+
+    // Asked until it answers; a failure only leaves "(you)" out, as GET spaces reports the error itself
+    private suspend fun loadMe() {
+        if (_state.value.myUserId != null) return
+        val me = repository.me() as? RestResult.Success ?: return
+        _state.update { it.copy(myUserId = me.result.id) }
     }
 
     private suspend fun fail(result: RestResult.Error) {

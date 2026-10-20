@@ -9,8 +9,8 @@ import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 internal data class MembersUiState(
     val space: Space? = null,
     val members: List<Member> = emptyList(),
-    /** The signed-in user, marked "(you)" in the list. */
-    val myUid: String? = null,
+    /** The signed-in user's backend id (GET me), marked "(you)" in the list; null until the backend answers. */
+    val myUserId: String? = null,
     val loading: Boolean = true,
     val busy: Boolean = false,
     /** The role picker shown before an invite link is made. */
@@ -29,6 +29,9 @@ internal data class MembersUiState(
 
     /** The owner changes the role of, and removes, anyone but themselves; the owner's own role never changes. */
     fun canManage(member: Member): Boolean = isOwner && member.role != Role.OWNER
+
+    /** The signed-in user themselves, by the backend's id: the sign-in provider's uid is never a [Member.userId]. */
+    fun isYou(member: Member): Boolean = myUserId != null && member.userId == myUserId
 
     companion object {
         /** The roles an invite or a role change can give: never OWNER. */

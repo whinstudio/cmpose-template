@@ -20,6 +20,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
+private const val CLIENT_VERSION = "1.2.3"
+private const val CLIENT_VERSION_HEADER = "X-Client-Version"
+
 class AuthenticatedClientTest {
 
     private class FakeTokens(var current: String?, val refreshed: String?) : TokenSource {
@@ -33,8 +36,20 @@ class AuthenticatedClientTest {
             }
     }
 
-    private fun client(tokens: TokenSource, base: String = "http://localhost:18001/", handler: MockRequestHandler) =
-        buildBackendClient(MockEngine(handler), base, tokens, isDebug = false)
+    private fun client(
+        tokens: TokenSource,
+        base: String = "http://localhost:18001/",
+        onUpgradeRequired: () -> Unit = {},
+        clientVersion: String = CLIENT_VERSION,
+        handler: MockRequestHandler
+    ) = buildBackendClient(
+        engine = MockEngine(handler),
+        baseUrl = base,
+        tokens = tokens,
+        isDebug = false,
+        clientVersion = clientVersion,
+        onUpgradeRequired = onUpgradeRequired
+    )
 
     // On real time: runTest's virtual clock skips ahead while MockEngine answers on another dispatcher,
     // so HttpTimeout's 45 s timer would fire before the response arrives.
@@ -176,5 +191,57 @@ class AuthenticatedClientTest {
             respondOk("[]")
         }.get("spaces/abc")
         assertEquals("/app/spaces/abc", url!!.encodedPath)
+    }
+
+    // The server compares the app's version; image hosts never learn it
+    @Test
+    fun sendsTheClientVersionToTheApiOnly() = apiTest {
+        val seen = mutableMapOf<String, String?>()
+        val c = client(FakeTokens("t", null)) { req ->
+            seen[req.url.host] = req.headers[CLIENT_VERSION_HEADER]
+            respondOk("[]")
+        }
+        c.get("spaces")
+        c.get("https://images.example.com/avatar.png")
+        assertEquals(mapOf("localhost" to CLIENT_VERSION, "images.example.com" to null), seen)
+    }
+
+    // The server answers 400 to a malformed version but lets a request without one through
+    @Test
+    fun aVersionThatIsNotMajorMinorPatchIsNotSent() = apiTest {
+        listOf("1.0", "", " ", "1.0.0-beta", "01.2.3").forEach { version ->
+            var seen: String? = "unset"
+            client(FakeTokens("t", null), clientVersion = version) { req ->
+                seen = req.headers[CLIENT_VERSION_HEADER]
+                respondOk("[]")
+            }.get("spaces")
+            assertEquals(null, seen, "version \"$version\"")
+        }
+    }
+
+    // The 426 still surfaces as an error to the caller; the callback opens the forced-update screen
+    @Test
+    fun upgradeRequiredCallsTheCallback() = apiTest {
+        var calls = 0
+        val c = client(FakeTokens("t", null), onUpgradeRequired = { calls++ }) {
+            respond(
+                """{"error":{"code":"CLIENT_UPGRADE_REQUIRED","message":"Update the app","minVersion":"2.0.0"}}""",
+                HttpStatusCode.UpgradeRequired,
+                headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+        val error = assertFailsWith<ClientRequestException> { c.get("spaces") }
+        assertEquals(426, error.response.status.value)
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun upgradeRequiredFromAnotherHostIsIgnored() = apiTest {
+        var calls = 0
+        val c = client(FakeTokens("t", null), onUpgradeRequired = { calls++ }) {
+            respondError(HttpStatusCode.UpgradeRequired)
+        }
+        assertFailsWith<ClientRequestException> { c.get("https://images.example.com/avatar.png") }
+        assertEquals(0, calls)
     }
 }

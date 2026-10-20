@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.account.presentation
 
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.auth.AuthResult
@@ -60,8 +61,8 @@ class SettingsViewModelTest {
         id: String,
         role: Role = Role.OWNER,
         memberCount: Int = 2,
-        isPersonal: Boolean = false,
-    ) = Space(id = id, name = id, role = role, isPersonal = isPersonal, memberCount = memberCount)
+        personal: Boolean = false,
+    ) = Space(id = id, name = id, role = role, personal = personal, memberCount = memberCount)
 
     @Test
     fun showsTheSignedInEmail() = runTest {
@@ -97,7 +98,7 @@ class SettingsViewModelTest {
     fun deleteWarningCountsSharedOwnedSpaces() = runTest {
         repository.spacesResult = RestResult.Success(
             listOf(
-                space("personal-shared", memberCount = 2, isPersonal = true),
+                space("personal-shared", memberCount = 2, personal = true),
                 space("shared-a", memberCount = 3),
                 space("shared-b", memberCount = 2),
                 space("owned-alone", memberCount = 1),
@@ -118,8 +119,8 @@ class SettingsViewModelTest {
     @Test
     fun sharedOwnedCountTruthTable() {
         val cases = listOf(
-            space("owner-personal-alone", memberCount = 1, isPersonal = true) to 0,
-            space("owner-personal-shared", memberCount = 2, isPersonal = true) to 1,
+            space("owner-personal-alone", memberCount = 1, personal = true) to 0,
+            space("owner-personal-shared", memberCount = 2, personal = true) to 1,
             space("owner-alone", memberCount = 1) to 0,
             space("owner-shared", memberCount = 5) to 1,
             space("editor-shared", role = Role.EDITOR, memberCount = 3) to 0,
@@ -207,6 +208,19 @@ class SettingsViewModelTest {
 
         assertEquals(listOf("canDeleteNow", "deleteServerAccount"), log - "spaces")
         assertEquals(UiError.UNKNOWN, viewModel.state.value.error)
+        assertFalse(viewModel.state.value.busy)
+        assertTrue(auth.state.value is AuthState.SignedIn)
+    }
+
+    // DELETE /me counts against the backend's strict limiter: 429 asks the user to wait, not to retry at once
+    @Test
+    fun aRateLimitedDeletionSaysTryLater() = runTest {
+        repository.deleteServerAccountResult = RestResult.Error(DataError.Http(429, ErrorCodes.RATE_LIMITED))
+
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(UiError.RATE_LIMITED, viewModel.state.value.error)
         assertFalse(viewModel.state.value.busy)
         assertTrue(auth.state.value is AuthState.SignedIn)
     }

@@ -220,7 +220,7 @@ private class RecordingSelectedSpace(private val log: MutableList<String>) : Sel
                 cancelledRefreshes++
             }
         }
-        current.value = Space(id = "personal", name = "Personal", role = Role.OWNER, isPersonal = true, memberCount = 1)
+        current.value = Space(id = "personal", name = "Personal", role = Role.OWNER, personal = true, memberCount = 1)
     }
 
     override suspend fun clear() {
