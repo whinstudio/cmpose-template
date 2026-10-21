@@ -2,6 +2,7 @@ package com.kturker.multiplatform.feature.sharing.presentation.ui.invite
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.InviteState
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.AuthState
@@ -22,6 +23,7 @@ import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_NOT_FOUND
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_TOO_MANY_REQUESTS
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_UNAUTHORIZED
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_UPGRADE_REQUIRED
+import com.kturker.multiplatform.feature.sharing.presentation.ui.apiCode
 import com.kturker.multiplatform.feature.sharing.presentation.ui.httpCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +34,8 @@ import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
-// The backend's INVITE_USED and INVITE_EXPIRED
+// The backend's INVITE_USED (409) and INVITE_EXPIRED (410); QUOTA_EXCEEDED (409) and INVITE_REVOKED (410)
+// share them and are told apart by their code first
 private const val HTTP_CONFLICT = 409
 private const val HTTP_GONE = 410
 
@@ -99,6 +102,7 @@ internal class InviteViewModel(
                     InviteState.VALID -> null
                     InviteState.USED -> InviteMessage.USED
                     InviteState.EXPIRED -> InviteMessage.EXPIRED
+                    InviteState.REVOKED -> InviteMessage.REVOKED
                 }
                 _state.update { it.copy(loading = false, preview = preview, message = message) }
             }
@@ -125,6 +129,8 @@ internal class InviteViewModel(
         // A 426 (upgrade required) gets no message: the forced-update screen covers the app
         val message = when {
             error.httpCode == HTTP_UPGRADE_REQUIRED -> null
+            error.apiCode == ErrorCodes.QUOTA_EXCEEDED -> InviteMessage.SPACE_FULL
+            error.apiCode == ErrorCodes.INVITE_REVOKED -> InviteMessage.REVOKED
             error.httpCode == HTTP_CONFLICT -> InviteMessage.USED
             error.httpCode == HTTP_GONE -> InviteMessage.EXPIRED
             error.httpCode == HTTP_NOT_FOUND -> InviteMessage.NOT_FOUND

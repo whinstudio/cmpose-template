@@ -8,6 +8,7 @@ import com.kturker.multiplatform.core.api.InviteState
 import com.kturker.multiplatform.core.api.InviteToken
 import com.kturker.multiplatform.core.api.Me
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.RoleChange
 import com.kturker.multiplatform.core.api.Space
@@ -113,6 +114,12 @@ class SpacesRepositoryTest {
         repository { json("""{"token":"tok","expiresAt":5}""", HttpStatusCode.Created) }.invite("s1", Role.EDITOR)
         assertEquals(HttpMethod.Post to "${BASE}spaces/s1/invites", lastCall())
 
+        repository { json("[]") }.pendingInvites("s1")
+        assertEquals(HttpMethod.Get to "${BASE}spaces/s1/invites", lastCall())
+
+        repository { noContent() }.revokeInvite("s1", "i1")
+        assertEquals(HttpMethod.Delete to "${BASE}spaces/s1/invites/i1", lastCall())
+
         repository { json(previewJson) }.preview("tok")
         assertEquals(HttpMethod.Post to "${BASE}invites/preview", lastCall())
 
@@ -173,14 +180,19 @@ class SpacesRepositoryTest {
         repository { noContent() }.setRole("s1", "u2", Role.VIEWER)
         assertEquals(RoleChange(Role.VIEWER), requests.last().decodedBody<RoleChange>())
 
-        val link = repository { json("""{"token":"tok","expiresAt":5}""") }.invite("s1", Role.EDITOR)
+        val link = repository { json("""{"id":"i1","token":"tok","expiresAt":5}""") }.invite("s1", Role.EDITOR)
         assertEquals(InviteRequest(Role.EDITOR), requests.last().decodedBody<InviteRequest>())
-        assertEquals(InviteLink("tok", 5), link.success())
+        assertEquals(InviteLink("i1", "tok", 5), link.success())
 
         val members = repository {
             json("""[{"userId":"u2","displayName":null,"email":"b@example.com","role":"viewer","joinedAt":3}]""")
         }.members("s1")
         assertEquals(listOf(Member("u2", null, "b@example.com", Role.VIEWER, 3)), members.success())
+
+        val invites = repository {
+            json("""[{"id":"i1","role":"editor","createdAt":3,"expiresAt":9}]""")
+        }.pendingInvites("s1")
+        assertEquals(listOf(PendingInvite("i1", Role.EDITOR, createdAt = 3, expiresAt = 9)), invites.success())
     }
 
     // A used invite answers 409, an expired one 410: both reach the screen as HTTP errors with the backend's code

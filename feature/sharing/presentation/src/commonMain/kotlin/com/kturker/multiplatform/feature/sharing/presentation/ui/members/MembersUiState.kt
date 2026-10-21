@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.sharing.presentation.ui.members
 
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.feature.sharing.contract.SharingConfig
@@ -17,6 +18,10 @@ internal data class MembersUiState(
     val choosingInviteRole: Boolean = false,
     /** The member whose removal waits for a confirmation. */
     val removing: Member? = null,
+    /** The space's invite links not yet used, revoked or run out; only the owner ([canShare]) has them. */
+    val invites: List<PendingInvite> = emptyList(),
+    /** The invite link whose revocation waits for a confirmation. */
+    val revoking: PendingInvite? = null,
     val error: SharingError? = null
 ) {
     private val isOwner: Boolean get() = space?.role == Role.OWNER

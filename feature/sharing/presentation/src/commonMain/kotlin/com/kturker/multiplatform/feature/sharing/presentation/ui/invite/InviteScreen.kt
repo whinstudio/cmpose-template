@@ -74,6 +74,8 @@ private fun InviteScreen(
 private fun InviteMessage.text(strings: SharingStrings): String = when (this) {
     InviteMessage.USED -> strings.inviteUsed
     InviteMessage.EXPIRED -> strings.inviteExpired
+    InviteMessage.REVOKED -> strings.inviteRevoked
+    InviteMessage.SPACE_FULL -> strings.inviteSpaceFull
     InviteMessage.NOT_FOUND -> strings.inviteNotFound
     InviteMessage.RATE_LIMITED -> strings.errorRateLimited
     InviteMessage.NETWORK -> strings.errorNetwork

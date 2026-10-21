@@ -22,5 +22,9 @@ object ApiRoutes {
     ) = "spaces/$spaceId/members/$userId"
     fun leave(spaceId: String) = "spaces/$spaceId/leave"
     fun invites(spaceId: String) = "spaces/$spaceId/invites"
+    fun invite(
+        spaceId: String,
+        inviteId: String
+    ) = "spaces/$spaceId/invites/$inviteId"
     fun file(id: String) = "files/$id"
 }

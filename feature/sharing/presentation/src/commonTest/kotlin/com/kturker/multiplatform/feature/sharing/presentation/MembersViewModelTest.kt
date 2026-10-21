@@ -1,6 +1,8 @@
 package com.kturker.multiplatform.feature.sharing.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import com.kturker.multiplatform.core.api.ErrorCodes
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.auth.SignOutReason
 import com.kturker.multiplatform.core.domain.DataError
@@ -10,6 +12,7 @@ import com.kturker.multiplatform.feature.sharing.contract.MembersDestination
 import com.kturker.multiplatform.feature.sharing.presentation.share.InviteText
 import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 import com.kturker.multiplatform.feature.sharing.presentation.ui.members.MembersViewModel
+import com.kturker.multiplatform.feature.sharing.presentation.ui.members.daysLeft
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,6 +38,8 @@ class MembersViewModelTest {
 
     private val me = member("me", role = Role.OWNER)
     private val bob = member("bob", role = Role.EDITOR)
+    private val editorInvite = PendingInvite(id = "i1", role = Role.EDITOR, createdAt = 1, expiresAt = 2)
+    private val viewerInvite = PendingInvite(id = "i2", role = Role.VIEWER, createdAt = 1, expiresAt = 2)
 
     @BeforeTest
     fun setUp() {
@@ -229,5 +234,155 @@ class MembersViewModelTest {
 
         assertEquals(listOf("signOut:${SignOutReason.SESSION_ENDED}", "forgetToken"), log.takeLast(2))
         assertTrue(sharer.shared.isEmpty())
+    }
+
+    @Test
+    fun ownerSeesPendingInvites() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite, viewerInvite))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertTrue("pendingInvites:home" in log)
+        assertEquals(2, viewModel.state.value.invites.size)
+    }
+
+    // The members already loaded stay on screen; the failed invite list only shows its error
+    @Test
+    fun aFailedInviteListStillListsTheMembers() = runTest {
+        repository.pendingInvitesResult = RestResult.Error(DataError.Network)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertTrue("pendingInvites:home" in log)
+        assertEquals(listOf(me, bob), state.members)
+        assertTrue(state.invites.isEmpty())
+        assertEquals(SharingError.NETWORK, state.error)
+        assertFalse(state.loading)
+    }
+
+    // Only the owner sees the invites (the server answers anyone else 404): nobody else asks for them
+    @Test
+    fun nonOwnerDoesNotAskForInvites() = runTest {
+        repository.listResult = RestResult.Success(listOf(space("home", role = Role.EDITOR, memberCount = 2)))
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite, viewerInvite))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(0, log.count { it.startsWith("pendingInvites") })
+        assertTrue(viewModel.state.value.invites.isEmpty())
+        assertEquals(null, viewModel.state.value.error)
+    }
+
+    @Test
+    fun shareOverInviteQuotaShowsInviteLimit() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.inviteResult = RestResult.Error(DataError.Http(409, ErrorCodes.QUOTA_EXCEEDED))
+
+        viewModel.share(Role.EDITOR)
+        advanceUntilIdle()
+
+        assertEquals(SharingError.INVITE_LIMIT, viewModel.state.value.error)
+        assertTrue(sharer.shared.isEmpty())
+        assertFalse(viewModel.state.value.busy)
+    }
+
+    // The new link joins the pending list
+    @Test
+    fun shareReloadsInvites() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite))
+
+        viewModel.share(Role.EDITOR)
+        advanceUntilIdle()
+
+        assertEquals(2, log.count { it == "pendingInvites:home" })
+        assertEquals(listOf(editorInvite), viewModel.state.value.invites)
+    }
+
+    @Test
+    fun confirmRevokeRevokesAndReloads() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite, viewerInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.requestRevoke(editorInvite)
+        assertEquals(editorInvite, viewModel.state.value.revoking)
+        repository.pendingInvitesResult = RestResult.Success(listOf(viewerInvite))
+        viewModel.confirmRevoke()
+        advanceUntilIdle()
+
+        assertTrue("revokeInvite:home:i1" in log)
+        assertEquals(listOf(viewerInvite), viewModel.state.value.invites)
+        assertEquals(null, viewModel.state.value.revoking)
+        assertEquals(null, viewModel.state.value.error)
+    }
+
+    @Test
+    fun dismissRevokeKeepsTheInvite() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.requestRevoke(editorInvite)
+        viewModel.dismissRevoke()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.state.value.revoking)
+        assertTrue(log.none { it.startsWith("revokeInvite") })
+    }
+
+    // Someone joined with the link meanwhile: it is no longer pending, so the list reloads without an error
+    @Test
+    fun revokeOfUsedInviteReloadsWithoutError() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.revokeInviteResult = RestResult.Error(DataError.Http(409, ErrorCodes.INVITE_USED))
+        repository.pendingInvitesResult = RestResult.Success(emptyList())
+
+        viewModel.requestRevoke(editorInvite)
+        viewModel.confirmRevoke()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.state.value.error)
+        assertTrue(viewModel.state.value.invites.isEmpty())
+        assertEquals(2, log.count { it == "pendingInvites:home" })
+        assertFalse(viewModel.state.value.busy)
+    }
+
+    // The invite is gone (revoked elsewhere, or run out and cleared): 404 reloads too, the space stays
+    @Test
+    fun revokeOfAnInviteGoneMeanwhileReloadsWithoutError() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.revokeInviteResult = RestResult.Error(DataError.Http(404, ErrorCodes.NOT_FOUND))
+        repository.pendingInvitesResult = RestResult.Success(emptyList())
+
+        viewModel.requestRevoke(editorInvite)
+        viewModel.confirmRevoke()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.state.value.error)
+        assertTrue(viewModel.state.value.invites.isEmpty())
+        assertFalse("refresh" in log)
+    }
+
+    // Any part of a day left counts as a whole day; an invite never shows zero days
+    @Test
+    fun daysLeftRoundsUpToWholeDays() {
+        val now = 1_000_000L
+        val day = 86_400_000L
+
+        assertEquals(1, daysLeft(now + 1, now))
+        assertEquals(7, daysLeft(now + day * 7, now))
+        assertEquals(7, daysLeft(now + day * 6 + 1, now))
+        assertEquals(1, daysLeft(now, now))
     }
 }

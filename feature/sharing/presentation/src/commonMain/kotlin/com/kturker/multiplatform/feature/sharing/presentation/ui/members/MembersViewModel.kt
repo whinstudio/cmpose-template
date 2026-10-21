@@ -2,7 +2,9 @@ package com.kturker.multiplatform.feature.sharing.presentation.ui.members
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.SessionTokens
@@ -19,6 +21,8 @@ import com.kturker.multiplatform.feature.sharing.presentation.share.InviteText
 import com.kturker.multiplatform.feature.sharing.presentation.share.TextSharer
 import com.kturker.multiplatform.feature.sharing.presentation.ui.BackendFailures
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_NOT_FOUND
+import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
+import com.kturker.multiplatform.feature.sharing.presentation.ui.apiCode
 import com.kturker.multiplatform.feature.sharing.presentation.ui.httpCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +35,7 @@ import org.koin.core.annotation.Provided
 /**
  * A space's members. The owner changes roles, removes members and shares invite links: Share asks for the role,
  * creates a single-use link (POST spaces/{id}/invites) and hands "<text>: <link>" to the platform's share sheet.
+ * The owner also sees the links not yet used (GET spaces/{id}/invites) and revokes one after a confirmation.
  * "(you)" marks the member whose id is the backend's id for the signed-in user (GET me).
  */
 @KoinViewModel
@@ -71,7 +76,8 @@ internal class MembersViewModel(
 
     override fun dismissShare() = _state.update { it.copy(choosingInviteRole = false) }
 
-    override fun share(role: Role) = act {
+    // The new link joins the pending list; too many pending links answer 409 QUOTA_EXCEEDED
+    override fun share(role: Role) = act(reload = true, quota = SharingError.INVITE_LIMIT) {
         val link = repository.invite(spaceId, role)
         if (link is RestResult.Success) {
             sharer.share(inviteText.of(inviteUrl(scheme = DEEP_LINK_SCHEME, token = link.result.token)))
@@ -94,19 +100,39 @@ internal class MembersViewModel(
         act(reload = true) { repository.remove(spaceId, member.userId) }
     }
 
+    override fun requestRevoke(invite: PendingInvite) =
+        _state.update { it.copy(revoking = invite, error = null) }
+
+    override fun dismissRevoke() = _state.update { it.copy(revoking = null) }
+
+    override fun confirmRevoke() {
+        val invite = _state.value.revoking ?: return
+        act(reload = true) {
+            val result = repository.revokeInvite(spaceId, invite.id)
+            // Someone joined with the link meanwhile (409 INVITE_USED): it is no longer pending either, so the
+            // reload shows the list as it is now. A 404 (the invite or the space is gone) reloads in act too.
+            val used = result is RestResult.Error && result.error.apiCode == ErrorCodes.INVITE_USED
+            if (used) RestResult.Success(Unit) else result
+        }
+    }
+
+    // quota: what 409 QUOTA_EXCEEDED means for this call (BackendFailures.handle)
     private fun act(
         reload: Boolean = false,
+        quota: SharingError = SharingError.UNKNOWN,
         call: suspend () -> RestResult<Any>
     ) {
         if (_state.value.busy) return
-        _state.update { it.copy(busy = true, choosingInviteRole = false, removing = null, error = null) }
+        _state.update {
+            it.copy(busy = true, choosingInviteRole = false, removing = null, revoking = null, error = null)
+        }
         viewModelScope.launch {
             val result = call()
             val failed = result is RestResult.Error
             // A 404: the space is gone, or only the target member is (they left meanwhile). load() tells the two
             // apart through GET spaces and otherwise shows the current list.
-            if (failed && (result as RestResult.Error).error.httpCode != HTTP_NOT_FOUND) {
-                val error = failures.handle(result.error)
+            if (failed && result.error.httpCode != HTTP_NOT_FOUND) {
+                val error = failures.handle(result.error, quota)
                 _state.update { it.copy(busy = false, error = error) }
                 return@launch
             }
@@ -126,11 +152,28 @@ internal class MembersViewModel(
             return _state.update { it.copy(loading = false, error = error) }
         }
         when (val members = repository.members(spaceId)) {
-            is RestResult.Success -> _state.update {
-                it.copy(space = space, members = members.result, loading = false, error = null)
+            is RestResult.Success -> {
+                _state.update { it.copy(space = space, members = members.result) }
+                loadInvites()
             }
 
             is RestResult.Error -> fail(members)
+
+            is RestResult.Loading -> Unit
+        }
+    }
+
+    // Only the owner of a sharing app asks: the server answers anyone else 404, which would read as no access
+    private suspend fun loadInvites() {
+        if (!_state.value.canShare) {
+            return _state.update { it.copy(invites = emptyList(), loading = false, error = null) }
+        }
+        when (val invites = repository.pendingInvites(spaceId)) {
+            is RestResult.Success -> _state.update {
+                it.copy(invites = invites.result, loading = false, error = null)
+            }
+
+            is RestResult.Error -> fail(invites)
 
             is RestResult.Loading -> Unit
         }

@@ -18,6 +18,7 @@ import com.kturker.multiplatform.feature.sharing.presentation.ui.invite.InviteVi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -159,6 +160,67 @@ class InviteViewModelTest {
 
         assertFalse("select:joined" in log)
         assertTrue(navigation.commands.isEmpty())
+    }
+
+    // The owner revoked the link before it was opened; asking again changes nothing
+    @Test
+    fun revokedPreviewShowsRevoked() = runTest {
+        repository.previewResult = preview(InviteState.REVOKED)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(InviteMessage.REVOKED, viewModel.state.value.message)
+        assertFalse(viewModel.state.value.canAccept)
+        assertFalse(viewModel.state.value.canRetry)
+    }
+
+    // A valid preview, then the accept tap meets the backend's answer
+    private fun TestScope.acceptAnswering(error: DataError): InviteViewModel {
+        repository.previewResult = preview(InviteState.VALID)
+        repository.acceptResult = RestResult.Error(error)
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.accept()
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    // The owner revoked the link between the preview and the tap
+    @Test
+    fun acceptRevokedShowsRevoked() = runTest {
+        val viewModel = acceptAnswering(DataError.Http(410, ErrorCodes.INVITE_REVOKED))
+
+        assertEquals(InviteMessage.REVOKED, viewModel.state.value.message)
+        assertFalse(viewModel.state.value.canAccept)
+        assertFalse(viewModel.state.value.canRetry)
+        assertFalse("select:joined" in log)
+    }
+
+    @Test
+    fun acceptExpiredStillShowsExpired() = runTest {
+        val viewModel = acceptAnswering(DataError.Http(410, ErrorCodes.INVITE_EXPIRED))
+
+        assertEquals(InviteMessage.EXPIRED, viewModel.state.value.message)
+    }
+
+    // The space reached its member limit; the 409 is not "already used"
+    @Test
+    fun acceptIntoFullSpaceShowsSpaceFull() = runTest {
+        val viewModel = acceptAnswering(DataError.Http(409, ErrorCodes.QUOTA_EXCEEDED))
+
+        assertEquals(InviteMessage.SPACE_FULL, viewModel.state.value.message)
+        assertFalse(viewModel.state.value.canAccept)
+        assertFalse(viewModel.state.value.canRetry)
+        assertFalse("select:joined" in log)
+        assertTrue(navigation.commands.isEmpty())
+    }
+
+    @Test
+    fun acceptUsedStillShowsUsed() = runTest {
+        val viewModel = acceptAnswering(DataError.Http(409, ErrorCodes.INVITE_USED))
+
+        assertEquals(InviteMessage.USED, viewModel.state.value.message)
     }
 
     // 426 opens the app-wide forced-update screen; the invite adds no message under it

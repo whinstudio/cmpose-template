@@ -4,7 +4,7 @@ import com.kturker.multiplatform.core.api.InvitePreview
 import com.kturker.multiplatform.core.api.InviteState
 
 /** Why an invite cannot be accepted; each one has a message in SharingStrings. */
-internal enum class InviteMessage { USED, EXPIRED, NOT_FOUND, RATE_LIMITED, NETWORK, UNKNOWN }
+internal enum class InviteMessage { USED, EXPIRED, REVOKED, SPACE_FULL, NOT_FOUND, RATE_LIMITED, NETWORK, UNKNOWN }
 
 internal data class InviteUiState(
     val loading: Boolean = true,

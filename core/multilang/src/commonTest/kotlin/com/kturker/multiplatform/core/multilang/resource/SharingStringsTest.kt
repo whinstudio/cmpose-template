@@ -27,6 +27,12 @@ class SharingStringsTest {
     }
 
     @Test
+    fun thePendingInviteSaysHowManyDaysAreLeft() {
+        assertEquals("Days left: 3", english.inviteDaysLeftText(3))
+        assertEquals("Kalan gün: 3", turkish.inviteDaysLeftText(3))
+    }
+
+    @Test
     fun theInviteMessageNamesTheInviterWhenThereIsOne() {
         assertEquals("Ada invites you to join Home.", english.inviteMessage(inviterName = "Ada", spaceName = "Home"))
         assertEquals("You are invited to join Home.", english.inviteMessage(inviterName = null, spaceName = "Home"))
@@ -42,12 +48,14 @@ class SharingStringsTest {
                 strings.shareInviteText(appName = "APPNAME", url = "URL-1"),
                 strings.inviteMessage(inviterName = "INVITER", spaceName = "SPACE"),
                 strings.inviteMessage(inviterName = null, spaceName = "SPACE"),
-                strings.inviteRoleText("ROLE")
+                strings.inviteRoleText("ROLE"),
+                strings.inviteDaysLeftText(7)
             )
             assertTrue(texts[0].contains("APPNAME") && texts[0].contains("URL-1"), "$language: ${texts[0]}")
             assertTrue(texts[1].contains("INVITER") && texts[1].contains("SPACE"), "$language: ${texts[1]}")
             assertTrue(texts[2].contains("SPACE"), "$language: ${texts[2]}")
             assertTrue(texts[3].contains("ROLE"), "$language: ${texts[3]}")
+            assertTrue(texts[4].contains("7"), "$language: ${texts[4]}")
             texts.forEach { assertFalse(it.contains('{') || it.contains('}'), "$language: $it") }
             assertTrue(strings.retry.isNotBlank(), "$language: retry")
         }

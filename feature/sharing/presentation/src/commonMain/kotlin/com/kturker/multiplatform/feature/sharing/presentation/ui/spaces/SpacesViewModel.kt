@@ -12,6 +12,7 @@ import com.kturker.multiplatform.feature.sharing.contract.MembersDestination
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
 import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesRepository
 import com.kturker.multiplatform.feature.sharing.presentation.ui.BackendFailures
+import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,8 +78,12 @@ internal class SpacesViewModel(
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         when (val dialog = _state.value.dialog) {
-            SpacesDialog.Create -> change(refreshSelection = false) { repository.create(trimmed) }
+            SpacesDialog.Create -> change(refreshSelection = false, quota = SharingError.SPACE_LIMIT) {
+                repository.create(trimmed)
+            }
+
             is SpacesDialog.Rename -> change(refreshSelection = true) { repository.rename(dialog.space.id, trimmed) }
+
             else -> Unit
         }
     }
@@ -102,8 +107,10 @@ internal class SpacesViewModel(
 
     override fun dismissDialog() = _state.update { it.copy(dialog = null) }
 
+    // quota: what 409 QUOTA_EXCEEDED means for this call (BackendFailures.handle)
     private fun change(
         refreshSelection: Boolean,
+        quota: SharingError = SharingError.UNKNOWN,
         call: suspend () -> RestResult<Any>
     ) {
         if (_state.value.busy) return
@@ -111,7 +118,7 @@ internal class SpacesViewModel(
         viewModelScope.launch {
             val result = call()
             if (result is RestResult.Error) {
-                val error = failures.handle(result.error)
+                val error = failures.handle(result.error, quota)
                 _state.update { it.copy(busy = false, error = error) }
                 // A 404 (the space is gone) changes the list too
                 if (error != null) load(keepError = true)

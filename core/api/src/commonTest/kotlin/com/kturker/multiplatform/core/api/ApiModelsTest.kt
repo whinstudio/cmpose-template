@@ -65,6 +65,36 @@ class ApiModelsTest {
     }
 
     @Test
+    fun inviteStateReadsRevoked() {
+        assertEquals(InviteState.REVOKED, Json.decodeFromString<InviteState>("\"revoked\""))
+    }
+
+    @Test
+    fun inviteLinkCarriesItsId() {
+        val text = """{"id":"i1","token":"t1","expiresAt":9}"""
+        assertEquals(
+            InviteLink(id = "i1", token = "t1", expiresAt = 9),
+            Json.decodeFromString<InviteLink>(text),
+        )
+    }
+
+    @Test
+    fun pendingInviteReadsRoleAndTimes() {
+        val text = """{"id":"i1","role":"editor","createdAt":3,"expiresAt":9}"""
+        val invite = Json.decodeFromString<PendingInvite>(text)
+        assertEquals(PendingInvite(id = "i1", role = Role.EDITOR, createdAt = 3, expiresAt = 9), invite)
+        assertEquals(text, Json.encodeToString(invite))
+    }
+
+    @Test
+    fun errorBodyReadsTheQuota() {
+        val text = """{"error":{"code":"QUOTA_EXCEEDED","message":"m","requestId":"r","quota":"members"}}"""
+        val error = Json.decodeFromString<ErrorBody>(text).error
+        assertEquals(ErrorCodes.QUOTA_EXCEEDED, error.code)
+        assertEquals("members", error.quota)
+    }
+
+    @Test
     fun errorBodyReadsTheNestedEnvelope() {
         val validation = """{"error":{"code":"BAD_REQUEST","message":"Invalid input","requestId":"r1",""" +
             """"fields":[{"field":"name","message":"Too long"}]}}"""
@@ -98,6 +128,8 @@ class ApiModelsTest {
             ErrorCodes.INVITE_USED to "INVITE_USED",
             ErrorCodes.INVITE_EXPIRED to "INVITE_EXPIRED",
             ErrorCodes.LAST_OWNER to "LAST_OWNER",
+            ErrorCodes.QUOTA_EXCEEDED to "QUOTA_EXCEEDED",
+            ErrorCodes.INVITE_REVOKED to "INVITE_REVOKED",
         )
         codes.forEach { (value, name) -> assertEquals(name, value) }
     }
@@ -113,6 +145,7 @@ class ApiModelsTest {
             ApiRoutes.member("s1", "u1"),
             ApiRoutes.leave("s1"),
             ApiRoutes.invites("s1"),
+            ApiRoutes.invite("s1", "i1"),
             ApiRoutes.INVITE_PREVIEW,
             ApiRoutes.INVITE_ACCEPT,
             ApiRoutes.FILES,
@@ -128,6 +161,7 @@ class ApiModelsTest {
         assertEquals("spaces/s1/members/u1", ApiRoutes.member("s1", "u1"))
         assertEquals("spaces/s1/leave", ApiRoutes.leave("s1"))
         assertEquals("spaces/s1/invites", ApiRoutes.invites("s1"))
+        assertEquals("spaces/s1/invites/i1", ApiRoutes.invite("s1", "i1"))
         assertEquals("files/f1", ApiRoutes.file("f1"))
     }
 

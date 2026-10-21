@@ -169,6 +169,7 @@ class ApiContractTest {
         const val REQUIRED_PROPERTY = "cmpose.openapi.required"
         const val ID = "{id}"
         const val USER_ID = "{userId}"
+        const val INVITE_ID = "{inviteId}"
 
         /** Path parameters, whatever their names, compare equal. */
         fun normalized(path: String) = path.replace(Regex("\\{[^}]*\\}"), "{}")
@@ -185,7 +186,9 @@ class ApiContractTest {
             "patch" to ApiRoutes.member(ID, USER_ID),
             "delete" to ApiRoutes.member(ID, USER_ID),
             "post" to ApiRoutes.leave(ID),
+            "get" to ApiRoutes.invites(ID),
             "post" to ApiRoutes.invites(ID),
+            "delete" to ApiRoutes.invite(ID, INVITE_ID),
             "post" to ApiRoutes.INVITE_PREVIEW,
             "post" to ApiRoutes.INVITE_ACCEPT,
             "post" to ApiRoutes.FILES,
@@ -203,6 +206,7 @@ class ApiContractTest {
             Model("RoleChange", RoleChange.serializer().descriptor, response = false),
             Model("InviteRequest", InviteRequest.serializer().descriptor, response = false),
             Model("Invite", InviteLink.serializer().descriptor, response = true),
+            Model("PendingInvite", PendingInvite.serializer().descriptor, response = true),
             Model("InviteToken", InviteToken.serializer().descriptor, response = false),
             Model("InvitePreview", InvitePreview.serializer().descriptor, response = true),
             Model("Me", Me.serializer().descriptor, response = true),

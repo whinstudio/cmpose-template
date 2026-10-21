@@ -46,7 +46,11 @@ data class InviteRequest(val role: Role)
 
 /** A new invite (schema `Invite`); its [token] is shown only once, when it is created. */
 @Serializable
-data class InviteLink(val token: String, val expiresAt: Long)
+data class InviteLink(val id: String, val token: String, val expiresAt: Long)
+
+/** An invite of the space not yet accepted, revoked or run out, as its owner sees it (schema `PendingInvite`). */
+@Serializable
+data class PendingInvite(val id: String, val role: Role, val createdAt: Long, val expiresAt: Long)
 
 /** The body of the invite preview and accept calls: the token never goes in the path. */
 @Serializable
@@ -61,7 +65,10 @@ enum class InviteState {
     USED,
 
     @SerialName("expired")
-    EXPIRED
+    EXPIRED,
+
+    @SerialName("revoked")
+    REVOKED
 }
 
 @Serializable
@@ -92,14 +99,18 @@ data class FileInfo(val id: String, val mime: String, val size: Long)
 @Serializable
 data class FieldError(val field: String, val message: String)
 
-/** [code] is one of [ErrorCodes] (or another constant); [minVersion] comes only with `CLIENT_UPGRADE_REQUIRED`. */
+/**
+ * [code] is one of [ErrorCodes] (or another constant); [minVersion] comes only with `CLIENT_UPGRADE_REQUIRED`,
+ * [quota] (which quota is full) only with `QUOTA_EXCEEDED`.
+ */
 @Serializable
 data class ErrorDetail(
     val code: String,
     val message: String,
     val requestId: String? = null,
     val fields: List<FieldError>? = null,
-    val minVersion: String? = null
+    val minVersion: String? = null,
+    val quota: String? = null
 )
 
 /** Every error the server sends: `{"error":{"code":…,"message":…,"requestId":…}}` (schema `Error`). */
@@ -124,4 +135,10 @@ object ErrorCodes {
 
     /** HTTP 409: the space's last owner cannot leave, be removed or lose the owner role. */
     const val LAST_OWNER = "LAST_OWNER"
+
+    /** HTTP 409: a quota is full; [ErrorDetail.quota] says which. */
+    const val QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+
+    /** HTTP 410: the owner revoked the invite. */
+    const val INVITE_REVOKED = "INVITE_REVOKED"
 }

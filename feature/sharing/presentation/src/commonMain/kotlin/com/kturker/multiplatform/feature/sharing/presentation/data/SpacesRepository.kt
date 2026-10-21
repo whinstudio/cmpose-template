@@ -7,6 +7,7 @@ import com.kturker.multiplatform.core.api.InviteRequest
 import com.kturker.multiplatform.core.api.InviteToken
 import com.kturker.multiplatform.core.api.Me
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.RoleChange
 import com.kturker.multiplatform.core.api.Space
@@ -25,7 +26,8 @@ import io.ktor.http.contentType
 
 /**
  * The backend's spaces, members and invite calls. A space the user is not a member of, or whose role is too low for
- * the call, answers 404, like one that does not exist; accepting a used invite answers 409, an expired one 410.
+ * the call, answers 404, like one that does not exist; accepting a used invite answers 409, an expired or revoked
+ * one 410. A call over one of the backend's limits answers 409 `QUOTA_EXCEEDED`.
  */
 interface SpacesRepository {
     /** GET spaces: every space the user is a member of, their personal space included. */
@@ -64,6 +66,15 @@ interface SpacesRepository {
 
     /** GET me: the signed-in user as the backend knows them; its [Me.id] is what [Member.userId] holds. */
     suspend fun me(): RestResult<Me>
+
+    /** GET spaces/{id}/invites (owner only): the links not yet used, revoked or run out, newest first. */
+    suspend fun pendingInvites(spaceId: String): RestResult<List<PendingInvite>>
+
+    /** DELETE spaces/{id}/invites/{inviteId} (owner only): the link stops working; a used one answers 409. */
+    suspend fun revokeInvite(
+        spaceId: String,
+        inviteId: String
+    ): RestResult<Unit>
 }
 
 /** [SpacesRepository] over the backend client (base URL, bearer token, JSON; a 401 refreshes the token once). */
@@ -115,6 +126,14 @@ internal class KtorSpacesRepository(private val client: HttpClient) :
         request { client.post(ApiRoutes.INVITE_ACCEPT) { json(InviteToken(token)) } }
 
     override suspend fun me(): RestResult<Me> = request { client.get(ApiRoutes.ME) }
+
+    override suspend fun pendingInvites(spaceId: String): RestResult<List<PendingInvite>> =
+        request { client.get(ApiRoutes.invites(spaceId)) }
+
+    override suspend fun revokeInvite(
+        spaceId: String,
+        inviteId: String
+    ): RestResult<Unit> = request { client.delete(ApiRoutes.invite(spaceId, inviteId)) }
 
     private inline fun <reified T : Any> HttpRequestBuilder.json(body: T) {
         contentType(ContentType.Application.Json)

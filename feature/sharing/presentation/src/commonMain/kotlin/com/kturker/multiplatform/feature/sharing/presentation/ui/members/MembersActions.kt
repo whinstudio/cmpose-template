@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.sharing.presentation.ui.members
 
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 
 internal interface MembersActions {
@@ -20,4 +21,9 @@ internal interface MembersActions {
     fun requestRemove(member: Member)
     fun confirmRemove()
     fun dismissRemove()
+
+    /** Asks before [invite]'s link stops working. */
+    fun requestRevoke(invite: PendingInvite)
+    fun confirmRevoke()
+    fun dismissRevoke()
 }

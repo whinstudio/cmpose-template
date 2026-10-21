@@ -32,11 +32,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
+import com.kturker.multiplatform.core.multilang.resource.inviteDaysLeftText
 import com.kturker.multiplatform.core.multilang.resource.sharing
 import com.kturker.multiplatform.feature.sharing.presentation.ui.label
 import com.kturker.multiplatform.feature.sharing.presentation.ui.sharingErrorText
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Clock
 
 @Composable
 internal fun MembersRoute(viewModel: MembersViewModel = koinViewModel()) {
@@ -51,6 +54,8 @@ private fun MembersScreen(
     actions: MembersActions
 ) {
     val strings = LocalStringResources.current.sharing
+    // The days left are counted from when the invites were last loaded
+    val now = remember(state.invites) { Clock.System.now().toEpochMilliseconds() }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,13 +92,29 @@ private fun MembersScreen(
                 items(state.members, key = Member::userId) { member ->
                     MemberCard(member = member, state = state, actions = actions)
                 }
+                if (state.canShare && state.invites.isNotEmpty()) {
+                    item(key = PENDING_INVITES_KEY) {
+                        Text(
+                            strings.pendingInvites,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                    items(state.invites, key = { "$PENDING_INVITES_KEY:${it.id}" }) { invite ->
+                        PendingInviteCard(invite = invite, now = now, busy = state.busy, actions = actions)
+                    }
+                }
             }
         }
     }
 
     if (state.choosingInviteRole) InviteRoleDialog(actions = actions)
     state.removing?.let { RemoveDialog(member = it, actions = actions) }
+    state.revoking?.let { RevokeDialog(invite = it, actions = actions) }
 }
+
+// The pending invites' heading, and the prefix of their rows' keys (apart from the members' user ids)
+private const val PENDING_INVITES_KEY = "pendingInvites"
 
 // The name the list shows: the display name, else the email
 private val Member.shownName: String get() = displayName?.takeIf { it.isNotBlank() } ?: email.orEmpty()
@@ -140,6 +161,35 @@ private fun MemberCard(
     }
 }
 
+// An invite link not yet used: the role it gives, the days it has left, and Revoke
+@Composable
+private fun PendingInviteCard(
+    invite: PendingInvite,
+    now: Long,
+    busy: Boolean,
+    actions: MembersActions
+) {
+    val strings = LocalStringResources.current.sharing
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(invite.role.label(strings), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    strings.inviteDaysLeftText(daysLeft(invite.expiresAt, now)),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            TextButton(
+                onClick = { actions.requestRevoke(invite) },
+                enabled = !busy,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(strings.revokeInvite)
+            }
+        }
+    }
+}
+
 @Composable
 private fun InviteRoleDialog(actions: MembersActions) {
     val strings = LocalStringResources.current.sharing
@@ -179,5 +229,27 @@ private fun RemoveDialog(
             }
         },
         dismissButton = { TextButton(onClick = actions::dismissRemove) { Text(strings.cancel) } }
+    )
+}
+
+@Composable
+private fun RevokeDialog(
+    invite: PendingInvite,
+    actions: MembersActions
+) {
+    val strings = LocalStringResources.current.sharing
+    AlertDialog(
+        onDismissRequest = actions::dismissRevoke,
+        title = { Text(invite.role.label(strings)) },
+        text = { Text(strings.revokeInviteWarning) },
+        confirmButton = {
+            OutlinedButton(
+                onClick = actions::confirmRevoke,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(strings.revokeInvite)
+            }
+        },
+        dismissButton = { TextButton(onClick = actions::dismissRevoke) { Text(strings.cancel) } }
     )
 }

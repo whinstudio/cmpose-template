@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.sharing.presentation.ui
 
 import androidx.compose.runtime.Composable
+import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.SessionTokens
@@ -12,8 +13,11 @@ import com.kturker.multiplatform.core.multilang.resource.SharingStrings
 import com.kturker.multiplatform.core.multilang.resource.sharing
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
 
-/** What the spaces and members screens tell the user; each one has a message in [SharingStrings]. */
-internal enum class SharingError { NO_ACCESS, RATE_LIMITED, NETWORK, UNKNOWN }
+/**
+ * What the spaces and members screens tell the user; each one has a message in [SharingStrings]. [SPACE_LIMIT] and
+ * [INVITE_LIMIT] are the backend's `QUOTA_EXCEEDED` on creating a space and an invite link.
+ */
+internal enum class SharingError { NO_ACCESS, RATE_LIMITED, NETWORK, SPACE_LIMIT, INVITE_LIMIT, UNKNOWN }
 
 internal const val HTTP_UNAUTHORIZED = 401
 internal const val HTTP_NOT_FOUND = 404
@@ -26,25 +30,34 @@ internal const val HTTP_TOO_MANY_REQUESTS = 429
 
 internal val DataError.httpCode: Int? get() = (this as? DataError.Http)?.code
 
+/** The backend's own error code (core:api `ErrorCodes`), null for a failure without an answer or without a code. */
+internal val DataError.apiCode: String? get() = (this as? DataError.Http)?.apiCode
+
 /**
  * The account rule for a failed backend call, shared by the sharing screens. A 401 that survived the token
  * refresh ends the session (signed out, cached token dropped; the sign-in screen explains) and shows nothing
  * here. A 404 means the space was deleted or the user was removed from it (the backend also answers 404, never
  * 403, to a role too low for the call): the selection is refreshed, so the app's screens fall back to the personal
- * space. A 426 shows nothing either: the forced-update screen covers the app.
+ * space. A 426 shows nothing either: the forced-update screen covers the app. A 409 `QUOTA_EXCEEDED` is the call's own
+ * limit, [quota] (which limit only the caller knows: a space, an invite link); otherwise it is [SharingError.UNKNOWN].
  */
 internal class BackendFailures(
     private val auth: AuthService,
     private val tokens: SessionTokens,
     private val selectedSpace: SelectedSpace
 ) {
-    suspend fun handle(error: DataError): SharingError? = when {
+    suspend fun handle(
+        error: DataError,
+        quota: SharingError = SharingError.UNKNOWN
+    ): SharingError? = when {
         error.httpCode == HTTP_UNAUTHORIZED -> {
             auth.signOutAndForget(tokens, SignOutReason.SESSION_ENDED)
             null
         }
 
         error.httpCode == HTTP_UPGRADE_REQUIRED -> null
+
+        error.apiCode == ErrorCodes.QUOTA_EXCEEDED -> quota
 
         error.httpCode == HTTP_NOT_FOUND -> noAccess()
 
@@ -65,6 +78,8 @@ internal fun SharingError.message(strings: SharingStrings): String = when (this)
     SharingError.NO_ACCESS -> strings.errorNoAccess
     SharingError.RATE_LIMITED -> strings.errorRateLimited
     SharingError.NETWORK -> strings.errorNetwork
+    SharingError.SPACE_LIMIT -> strings.errorSpaceLimit
+    SharingError.INVITE_LIMIT -> strings.errorInviteLimit
     SharingError.UNKNOWN -> strings.errorUnknown
 }
 

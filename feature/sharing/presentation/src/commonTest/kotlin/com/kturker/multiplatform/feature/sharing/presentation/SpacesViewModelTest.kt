@@ -156,6 +156,21 @@ class SpacesViewModelTest {
         assertNull(viewModel.state.value.dialog)
     }
 
+    // The user owns as many spaces as the backend allows: 409 QUOTA_EXCEEDED says so instead of a generic error
+    @Test
+    fun createOverSpaceQuotaShowsSpaceLimit() = runTest {
+        repository.createResult = RestResult.Error(DataError.Http(409, ErrorCodes.QUOTA_EXCEEDED))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.startCreate()
+        viewModel.submitName("Home")
+        advanceUntilIdle()
+
+        assertEquals(SharingError.SPACE_LIMIT, viewModel.state.value.error)
+        assertFalse(viewModel.state.value.busy)
+    }
+
     @Test
     fun aBlankNameIsNotSent() = runTest {
         val viewModel = viewModel()

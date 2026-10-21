@@ -7,6 +7,7 @@ import com.kturker.multiplatform.core.api.InviteLink
 import com.kturker.multiplatform.core.api.InvitePreview
 import com.kturker.multiplatform.core.api.Me
 import com.kturker.multiplatform.core.api.Member
+import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.auth.AuthResult
@@ -89,9 +90,11 @@ internal class FakeSpacesRepository(val log: MutableList<String> = mutableListOf
     var setRoleResult: RestResult<Unit> = RestResult.Success(Unit)
     var removeResult: RestResult<Unit> = RestResult.Success(Unit)
     var leaveResult: RestResult<Unit> = RestResult.Success(Unit)
-    var inviteResult: RestResult<InviteLink> = RestResult.Success(InviteLink(token = "tok", expiresAt = 0))
+    var inviteResult: RestResult<InviteLink> = RestResult.Success(InviteLink(id = "i1", token = "tok", expiresAt = 0))
     var previewResult: RestResult<InvitePreview>? = null
     var acceptResult: RestResult<Space> = RestResult.Success(space("joined", role = Role.EDITOR))
+    var pendingInvitesResult: RestResult<List<PendingInvite>> = RestResult.Success(emptyList())
+    var revokeInviteResult: RestResult<Unit> = RestResult.Success(Unit)
 
     /** The backend's own id for the signed-in user, unlike FakeAuthService's Firebase uid ("me"). */
     var meResult: RestResult<Me> = RestResult.Success(Me(id = "backend-me"))
@@ -124,6 +127,12 @@ internal class FakeSpacesRepository(val log: MutableList<String> = mutableListOf
     override suspend fun accept(token: String): RestResult<Space> = acceptResult.also { log += "accept:$token" }
 
     override suspend fun me(): RestResult<Me> = meResult.also { log += "me" }
+
+    override suspend fun pendingInvites(spaceId: String): RestResult<List<PendingInvite>> =
+        pendingInvitesResult.also { log += "pendingInvites:$spaceId" }
+
+    override suspend fun revokeInvite(spaceId: String, inviteId: String): RestResult<Unit> =
+        revokeInviteResult.also { log += "revokeInvite:$spaceId:$inviteId" }
 }
 
 /** Records select and refresh in [log]; [current] is set by the test. */
