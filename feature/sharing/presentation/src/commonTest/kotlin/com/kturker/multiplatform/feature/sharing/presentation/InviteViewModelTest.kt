@@ -127,6 +127,18 @@ class InviteViewModelTest {
         assertFalse(viewModel.state.value.canAccept)
     }
 
+    // A state a newer server sends and this app does not know: no Accept, the generic message
+    @Test
+    fun anInviteInAStateTheAppDoesNotKnowCannotBeAccepted() = runTest {
+        repository.previewResult = preview(InviteState.UNKNOWN)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        assertEquals(InviteMessage.UNKNOWN, viewModel.state.value.message)
+        assertFalse(viewModel.state.value.canAccept)
+    }
+
     @Test
     fun anUnknownInviteIsNotFound() = runTest {
         repository.previewResult = RestResult.Error(DataError.Http(404))

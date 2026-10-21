@@ -1,9 +1,15 @@
 package com.kturker.multiplatform.core.api
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ApiModelsTest {
 
@@ -20,11 +26,60 @@ class ApiModelsTest {
             (Role.OWNER to Role.EDITOR) to true,
             (Role.OWNER to Role.OWNER) to true,
         )
-        assertEquals(Role.entries.size * Role.entries.size, expected.size)
+        val serverRoles = Role.entries - Role.UNKNOWN
+        assertEquals(serverRoles.size * serverRoles.size, expected.size)
         expected.forEach { (pair, result) ->
             val (role, other) = pair
             assertEquals(result, role.atLeast(other), "$role.atLeast($other)")
         }
+    }
+
+    @Test
+    fun unknownRoleDecodesToUnknown() {
+        assertEquals(Role.UNKNOWN, Json.decodeFromString<Role>("\"admin\""))
+        assertEquals(Role.OWNER, Json.decodeFromString<Role>("\"owner\""))
+    }
+
+    @Test
+    fun unknownInviteStateDecodesToUnknown() {
+        assertEquals(InviteState.UNKNOWN, Json.decodeFromString<InviteState>("\"paused\""))
+        // A newer server's values do not fail the whole response
+        val text = """{"spaceName":"Home","inviterName":null,"role":"admin","expiresAt":7,"state":"paused"}"""
+        assertEquals(
+            InvitePreview(
+                spaceName = "Home",
+                inviterName = null,
+                role = Role.UNKNOWN,
+                expiresAt = 7,
+                state = InviteState.UNKNOWN,
+            ),
+            Json.decodeFromString<InvitePreview>(text),
+        )
+    }
+
+    @Test
+    fun unknownIsNeverSent() {
+        assertFailsWith<SerializationException> { Json.encodeToString(RoleChange(Role.UNKNOWN)) }
+        assertFailsWith<SerializationException> { Json.encodeToString(InviteState.UNKNOWN) }
+        assertEquals("""{"role":"viewer"}""", Json.encodeToString(RoleChange(Role.VIEWER)))
+    }
+
+    @Test
+    fun unknownRoleHasNoRights() {
+        assertFalse(Role.UNKNOWN.atLeast(Role.VIEWER))
+        assertTrue(Role.VIEWER.atLeast(Role.UNKNOWN))
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    @Test
+    fun descriptorsListOnlyServerValues() {
+        fun SerialDescriptor.names() = (0 until elementsCount).map(::getElementName)
+        val role = Role.serializer().descriptor
+        assertEquals(SerialKind.ENUM, role.kind)
+        assertEquals(listOf("owner", "editor", "viewer"), role.names())
+        val state = InviteState.serializer().descriptor
+        assertEquals(SerialKind.ENUM, state.kind)
+        assertEquals(listOf("valid", "used", "expired", "revoked"), state.names())
     }
 
     @Test

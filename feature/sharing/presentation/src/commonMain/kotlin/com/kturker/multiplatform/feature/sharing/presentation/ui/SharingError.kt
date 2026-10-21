@@ -87,6 +87,7 @@ internal fun Role.label(strings: SharingStrings): String = when (this) {
     Role.OWNER -> strings.roleOwner
     Role.EDITOR -> strings.roleEditor
     Role.VIEWER -> strings.roleViewer
+    Role.UNKNOWN -> strings.roleUnknown
 }
 
 @Composable

@@ -103,6 +103,7 @@ internal class InviteViewModel(
                     InviteState.USED -> InviteMessage.USED
                     InviteState.EXPIRED -> InviteMessage.EXPIRED
                     InviteState.REVOKED -> InviteMessage.REVOKED
+                    InviteState.UNKNOWN -> InviteMessage.UNKNOWN
                 }
                 _state.update { it.copy(loading = false, preview = preview, message = message) }
             }

@@ -1,27 +1,34 @@
 package com.kturker.multiplatform.core.api
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // The backend's API contract: each model matches the schema of the same meaning in its OpenAPI description
 // (ApiContractTest checks them against server/build/openapi/openapi.json).
 
-@Serializable
+/**
+ * On the wire each role is its name in lower case. [UNKNOWN] is any role a newer server sends that the app does
+ * not know; it is never sent.
+ */
+@Serializable(with = RoleSerializer::class)
 enum class Role {
-    @SerialName("owner")
     OWNER,
-
-    @SerialName("editor")
     EDITOR,
-
-    @SerialName("viewer")
-    VIEWER
+    VIEWER,
+    UNKNOWN
 }
 
-/** Role order for checks: VIEWER < EDITOR < OWNER. */
+internal object RoleSerializer : FallbackEnumSerializer<Role>(
+    serialName = "com.kturker.multiplatform.core.api.Role",
+    entries = Role.entries,
+    fallback = Role.UNKNOWN,
+    wireName = { it.name.lowercase() }
+)
+
+/** Role order for checks: UNKNOWN < VIEWER < EDITOR < OWNER; a role the app does not know grants nothing. */
 fun Role.atLeast(other: Role): Boolean = rank() >= other.rank()
 
 private fun Role.rank() = when (this) {
+    Role.UNKNOWN -> -1
     Role.VIEWER -> 0
     Role.EDITOR -> 1
     Role.OWNER -> 2
@@ -56,20 +63,25 @@ data class PendingInvite(val id: String, val role: Role, val createdAt: Long, va
 @Serializable
 data class InviteToken(val token: String)
 
-@Serializable
+/**
+ * On the wire each state is its name in lower case. [UNKNOWN] is any state a newer server sends that the app does
+ * not know; it is never sent.
+ */
+@Serializable(with = InviteStateSerializer::class)
 enum class InviteState {
-    @SerialName("valid")
     VALID,
-
-    @SerialName("used")
     USED,
-
-    @SerialName("expired")
     EXPIRED,
-
-    @SerialName("revoked")
-    REVOKED
+    REVOKED,
+    UNKNOWN
 }
+
+internal object InviteStateSerializer : FallbackEnumSerializer<InviteState>(
+    serialName = "com.kturker.multiplatform.core.api.InviteState",
+    entries = InviteState.entries,
+    fallback = InviteState.UNKNOWN,
+    wireName = { it.name.lowercase() }
+)
 
 @Serializable
 data class InvitePreview(
