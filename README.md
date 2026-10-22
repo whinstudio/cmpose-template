@@ -9,7 +9,7 @@ This project was generated with **[cmpose](https://github.com/whinstudio/cmpose)
 | Kotlin | 2.3.21 |
 | Compose Multiplatform | 1.11.1 |
 | Android Gradle Plugin | 9.2.1 |
-| Gradle (wrapper) | 9.4.1 |
+| Gradle (wrapper) | 9.7.0 |
 | Android compileSdk / targetSdk | 36 / 36 |
 | Android minSdk | 30 |
 | iOS minimum | 18.2 |
