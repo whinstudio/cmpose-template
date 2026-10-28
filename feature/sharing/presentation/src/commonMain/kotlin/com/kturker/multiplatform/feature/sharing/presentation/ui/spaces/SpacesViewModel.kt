@@ -61,6 +61,8 @@ internal class SpacesViewModel(
         viewModelScope.launch { load() }
     }
 
+    override fun dismissError() = _state.update { it.copy(error = null) }
+
     override fun select(spaceId: String) {
         viewModelScope.launch { selectedSpace.select(spaceId) }
     }

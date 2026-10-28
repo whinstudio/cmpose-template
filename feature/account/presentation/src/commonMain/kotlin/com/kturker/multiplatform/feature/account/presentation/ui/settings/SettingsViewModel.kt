@@ -15,6 +15,7 @@ import com.kturker.multiplatform.feature.account.presentation.data.AccountReposi
 import com.kturker.multiplatform.feature.account.presentation.data.sharedOwnedCount
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 import com.kturker.multiplatform.feature.account.presentation.ui.isUnauthorized
+import com.kturker.multiplatform.feature.account.presentation.ui.isUpgradeRequired
 import com.kturker.multiplatform.feature.account.presentation.ui.toUiError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -130,8 +131,11 @@ internal class SettingsViewModel(
 
         val server = repository.deleteServerAccount()
         if (server is RestResult.Error) {
+            // A 401 ends the session (the sign-in screen explains it); a 426 is covered by the forced-update screen
             if (server.error.isUnauthorized) signOutAndForget(SignOutReason.SESSION_ENDED)
-            return _state.update { it.copy(busy = false, error = server.error.toUiError()) }
+            val silent = server.error.isUnauthorized || server.error.isUpgradeRequired
+            val error = if (silent) null else server.error.toUiError()
+            return _state.update { it.copy(busy = false, error = error) }
         }
 
         val firebase = auth.deleteUser()

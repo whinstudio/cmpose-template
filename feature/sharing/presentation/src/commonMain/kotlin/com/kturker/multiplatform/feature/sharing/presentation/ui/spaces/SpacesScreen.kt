@@ -36,6 +36,7 @@ import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.sharing
 import com.kturker.multiplatform.feature.sharing.presentation.ui.label
+import com.kturker.multiplatform.feature.sharing.presentation.ui.retryable
 import com.kturker.multiplatform.feature.sharing.presentation.ui.sharingErrorText
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -75,7 +76,11 @@ private fun SpacesScreen(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = actions::retry) { Text(strings.retry) }
+                    if (error.retryable) {
+                        TextButton(onClick = actions::retry) { Text(strings.retry) }
+                    } else {
+                        TextButton(onClick = actions::dismissError) { Text(strings.close) }
+                    }
                 }
             }
             LazyColumn(

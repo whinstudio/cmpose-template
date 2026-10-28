@@ -7,6 +7,8 @@ import com.kturker.multiplatform.core.about.di.AboutModule
 import com.kturker.multiplatform.core.auth.di.AuthModule
 import com.kturker.multiplatform.core.database.di.DatabaseModule
 import com.kturker.multiplatform.core.domain.BuildEnvironment
+import com.kturker.multiplatform.core.insights.di.InsightsModule
+import com.kturker.multiplatform.core.insights.installInsightsLogging
 import com.kturker.multiplatform.core.logging.configureLogging
 import com.kturker.multiplatform.core.multilang.di.MultiLangModule
 import com.kturker.multiplatform.core.navigation.NavigationModule
@@ -30,6 +32,7 @@ import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import org.koin.ksp.generated.module
+import org.koin.mp.KoinPlatform
 import org.koin.core.module.Module as KoinModule
 
 // The platform entry points start Koin: Android's Application, iOS's startKoinAtLaunch().
@@ -44,6 +47,7 @@ fun initKoin(
         modules(module { single { BuildEnvironment(isDebug) } })
         modules(appModules())
     }
+    installInsightsLogging(KoinPlatform.getKoin().get())
     Logger.withTag("App").i { "Koin started (debug build: $isDebug)" }
 }
 
@@ -71,6 +75,7 @@ fun appModules(): List<KoinModule> = buildList {
     add(ReviewModule().module)
     add(UpdateModule().module)
     add(PurchasesModule().module)
+    add(InsightsModule().module)
     add(MonetizationPresentationModule().module)
 }
 

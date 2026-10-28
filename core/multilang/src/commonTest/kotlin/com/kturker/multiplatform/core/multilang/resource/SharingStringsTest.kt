@@ -58,6 +58,7 @@ class SharingStringsTest {
             assertTrue(texts[4].contains("7"), "$language: ${texts[4]}")
             texts.forEach { assertFalse(it.contains('{') || it.contains('}'), "$language: $it") }
             assertTrue(strings.retry.isNotBlank(), "$language: retry")
+            assertTrue(strings.unnamedMember.isNotBlank(), "$language: unnamedMember")
         }
     }
 

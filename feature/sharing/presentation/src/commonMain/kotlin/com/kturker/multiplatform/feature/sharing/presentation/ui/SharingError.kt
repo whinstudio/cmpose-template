@@ -74,6 +74,10 @@ internal class BackendFailures(
     }
 }
 
+/** A quota is not retried: asking again cannot get past it (a space must be deleted or a link revoked first). */
+internal val SharingError.retryable: Boolean
+    get() = this != SharingError.SPACE_LIMIT && this != SharingError.INVITE_LIMIT
+
 internal fun SharingError.message(strings: SharingStrings): String = when (this) {
     SharingError.NO_ACCESS -> strings.errorNoAccess
     SharingError.RATE_LIMITED -> strings.errorRateLimited

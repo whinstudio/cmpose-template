@@ -5,6 +5,9 @@ import com.kturker.multiplatform.core.api.Space
 internal interface SpacesActions {
     fun onBack()
     fun retry()
+
+    /** Hides an error that is not retried (a quota). */
+    fun dismissError()
     fun select(spaceId: String)
     fun openMembers(spaceId: String)
     fun startCreate()

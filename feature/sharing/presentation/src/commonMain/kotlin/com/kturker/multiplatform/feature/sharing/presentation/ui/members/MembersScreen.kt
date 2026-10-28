@@ -37,6 +37,7 @@ import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.inviteDaysLeftText
 import com.kturker.multiplatform.core.multilang.resource.sharing
 import com.kturker.multiplatform.feature.sharing.presentation.ui.label
+import com.kturker.multiplatform.feature.sharing.presentation.ui.retryable
 import com.kturker.multiplatform.feature.sharing.presentation.ui.sharingErrorText
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
@@ -81,7 +82,11 @@ private fun MembersScreen(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = actions::retry) { Text(strings.retry) }
+                    if (error.retryable) {
+                        TextButton(onClick = actions::retry) { Text(strings.retry) }
+                    } else {
+                        TextButton(onClick = actions::dismissError) { Text(strings.close) }
+                    }
                 }
             }
             LazyColumn(
@@ -116,9 +121,6 @@ private fun MembersScreen(
 // The pending invites' heading, and the prefix of their rows' keys (apart from the members' user ids)
 private const val PENDING_INVITES_KEY = "pendingInvites"
 
-// The name the list shows: the display name, else the email
-private val Member.shownName: String get() = displayName?.takeIf { it.isNotBlank() } ?: email.orEmpty()
-
 @Composable
 private fun MemberCard(
     member: Member,
@@ -131,7 +133,7 @@ private fun MemberCard(
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 val you = if (state.isYou(member)) " ${strings.you}" else ""
-                Text(member.shownName + you, style = MaterialTheme.typography.titleMedium)
+                Text(member.shownName(strings.unnamedMember) + you, style = MaterialTheme.typography.titleMedium)
                 Text(member.role.label(strings), style = MaterialTheme.typography.bodySmall)
             }
             if (state.canManage(member)) {
@@ -218,7 +220,7 @@ private fun RemoveDialog(
     val strings = LocalStringResources.current.sharing
     AlertDialog(
         onDismissRequest = actions::dismissRemove,
-        title = { Text(member.shownName) },
+        title = { Text(member.shownName(strings.unnamedMember)) },
         text = { Text(strings.removeMemberWarning) },
         confirmButton = {
             OutlinedButton(

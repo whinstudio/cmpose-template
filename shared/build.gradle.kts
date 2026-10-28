@@ -14,6 +14,8 @@ kotlin {
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             export(projects.core.ads)
+            // Swift implements core:insights' IosInsightsBridge and hands it to IosInsights.register
+            export(projects.core.insights)
             // cmpose:backend
             // Swift implements core:auth's IosSignInBridge and hands it to registerSignInBridge
             export(projects.core.auth)
@@ -48,6 +50,7 @@ kotlin {
             implementation(projects.feature.onboarding.contract)
             implementation(projects.core.designsystem)
             api(projects.core.ads)
+            api(projects.core.insights)
             implementation(projects.core.purchases)
             implementation(projects.feature.monetization.contract)
             implementation(projects.feature.monetization.presentation)

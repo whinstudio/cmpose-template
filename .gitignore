@@ -29,8 +29,10 @@ shared/src/commonMain/composeResources/files/aboutlibraries.json
 
 # Local development server data (embedded PostgreSQL, files, config)
 /.local-server/
+# /cmpose:backend
+# cmpose:firebase
 
 # Firebase app config: per developer, never committed (the app builds and runs without it)
 androidApp/google-services.json
 iosApp/iosApp/GoogleService-Info.plist
-# /cmpose:backend
+# /cmpose:firebase

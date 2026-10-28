@@ -225,6 +225,21 @@ class SettingsViewModelTest {
         assertTrue(auth.state.value is AuthState.SignedIn)
     }
 
+    // A 426 has opened the app-wide forced-update screen already: no error under it, and the Firebase user stays
+    @Test
+    fun anUpgradeRequiredDeletionShowsNoError() = runTest {
+        repository.deleteServerAccountResult =
+            RestResult.Error(DataError.Http(426, ErrorCodes.CLIENT_UPGRADE_REQUIRED))
+
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(listOf("canDeleteNow", "deleteServerAccount"), log - "spaces")
+        assertNull(viewModel.state.value.error)
+        assertFalse(viewModel.state.value.busy)
+        assertTrue(auth.state.value is AuthState.SignedIn)
+    }
+
     @Test
     fun signingInAgainRestartsTheDeletion() = runTest {
         auth.canDeleteNowResults.clear()
@@ -342,11 +357,13 @@ class SettingsViewModelTest {
     fun unauthorizedServerDeletionSignsOut() = runTest {
         repository.deleteServerAccountResult = RestResult.Error(DataError.Http(401))
 
-        confirmedDeletion()
+        val viewModel = confirmedDeletion()
         advanceUntilIdle()
 
         assertEquals(listOf("canDeleteNow", "deleteServerAccount", "signOut", "forgetToken"), log - "spaces")
         assertEquals(listOf(SignOutReason.SESSION_ENDED), auth.signOutReasons)
+        // The sign-in screen explains the ended session; no error is left on this one
+        assertNull(viewModel.state.value.error)
     }
 
     @Test

@@ -1,17 +1,23 @@
 plugins {
     alias(libs.plugins.multiplatform.application.plugin)
-    // cmpose:backend
+    // cmpose:firebase
     alias(libs.plugins.googleServices) apply false
-    // /cmpose:backend
+    alias(libs.plugins.firebaseCrashlytics) apply false
+    // /cmpose:firebase
 }
 
-// cmpose:backend
-// Firebase app config (sign-in): the google-services plugin reads google-services.json into resources
-// (default_web_client_id for Google sign-in, the Firebase app ID and API key). The file is per developer and
-// git-ignored; without it the plugin is not applied, the app still builds, and sign-in reports Unavailable.
-if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+// cmpose:firebase
+// Firebase app config (sign-in with the backend, Crashlytics and Analytics with insights): the google-services plugin
+// reads google-services.json into resources (default_web_client_id for Google sign-in, the Firebase app ID and API
+// key). The file is per developer and git-ignored; without it the plugins are not applied, the app still builds,
+// sign-in reports Unavailable and insights stay off. Crashlytics' plugin needs the file too (it writes the build ID
+// the SDK checks at start, and uploads the R8 mapping of release builds).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+}
 
-// /cmpose:backend
+// /cmpose:firebase
 dependencies {
     implementation(projects.shared)
     // cmpose:backend

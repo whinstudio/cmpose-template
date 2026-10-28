@@ -7,6 +7,8 @@ import kotlin.time.Clock
 
 private const val KEY_LAST_CHECK = "update.lastCheck"
 private const val KEY_LAST_REQUIRED = "update.lastRequired"
+private const val STORE_LOOKUP_ATTEMPTS = 3
+private const val STORE_LOOKUP_DELAY_MILLIS = 2_000L
 
 private val log = Logger.withTag("Update")
 
@@ -39,9 +41,16 @@ class UpdateChecker(private val store: UpdateCheckStore) {
     }
 
     // Where "Update" leads when the server asks for a newer version (ForcedUpdateSignal): the App Store page on
-    // iOS, null when the lookup finds none; null on Android, where Play's page is opened without a URL
-    suspend fun storeUrl(): String? =
-        if (currentUpdatePlatform == UpdatePlatform.Ios) fetchStoreRelease()?.storeUrl else null
+    // iOS, null when the lookup finds none; null on Android, where Play's page is opened without a URL. The
+    // screen's button does nothing without it, so a failed lookup is tried again a few times.
+    suspend fun storeUrl(): String? {
+        if (currentUpdatePlatform != UpdatePlatform.Ios) return null
+        val url = retryOnNull(attempts = STORE_LOOKUP_ATTEMPTS, delayMs = STORE_LOOKUP_DELAY_MILLIS) {
+            fetchStoreRelease()?.storeUrl
+        }
+        if (url == null) log.w { "App Store lookup found no page after $STORE_LOOKUP_ATTEMPTS attempts" }
+        return url
+    }
 }
 
 private suspend fun fetchMinVersions(): MinVersions? {

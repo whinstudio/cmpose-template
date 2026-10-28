@@ -2,10 +2,12 @@ package com.kturker.multiplatform.feature.sharing.presentation.ui.members
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Member
 import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
+import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.SessionTokens
 import com.kturker.multiplatform.core.domain.RestResult
@@ -24,6 +26,8 @@ import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_NOT_FOUND
 import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 import com.kturker.multiplatform.feature.sharing.presentation.ui.apiCode
 import com.kturker.multiplatform.feature.sharing.presentation.ui.httpCode
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +35,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
+
+private val log = Logger.withTag("Sharing")
 
 /**
  * A space's members. The owner changes roles, removes members and shares invite links: Share asks for the role,
@@ -71,6 +77,8 @@ internal class MembersViewModel(
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch { load() }
     }
+
+    override fun dismissError() = _state.update { it.copy(error = null) }
 
     override fun startShare() = _state.update { it.copy(choosingInviteRole = true, error = null) }
 
@@ -141,17 +149,26 @@ internal class MembersViewModel(
         }
     }
 
-    // The space (its name, the user's role) comes from GET spaces; one missing from it is gone for this user
-    private suspend fun load() {
-        loadMe()
-        val spaces = repository.list()
+    // The space (its name, the user's role) comes from GET spaces; one missing from it is gone for this user.
+    // GET me, GET spaces and the members are asked together; without the space the members' answer is dropped.
+    private suspend fun load() = coroutineScope {
+        launch { loadMe() }
+        val spaces = async { repository.list() }
+        val members = async { repository.members(spaceId) }
+        show(spaces.await(), members.await())
+    }
+
+    private suspend fun show(
+        spaces: RestResult<List<Space>>,
+        members: RestResult<List<Member>>
+    ) {
         if (spaces is RestResult.Error) return fail(spaces)
         val space = (spaces as? RestResult.Success)?.result?.firstOrNull { it.id == spaceId }
         if (space == null) {
             val error = failures.noAccess()
             return _state.update { it.copy(loading = false, error = error) }
         }
-        when (val members = repository.members(spaceId)) {
+        when (members) {
             is RestResult.Success -> {
                 _state.update { it.copy(space = space, members = members.result) }
                 loadInvites()
@@ -182,8 +199,11 @@ internal class MembersViewModel(
     // Asked until it answers; a failure only leaves "(you)" out, as GET spaces reports the error itself
     private suspend fun loadMe() {
         if (_state.value.myUserId != null) return
-        val me = repository.me() as? RestResult.Success ?: return
-        _state.update { it.copy(myUserId = me.result.id) }
+        when (val me = repository.me()) {
+            is RestResult.Success -> _state.update { it.copy(myUserId = me.result.id) }
+            is RestResult.Error -> log.w { "me() failed: ${me.error.httpCode ?: me.error::class.simpleName}" }
+            is RestResult.Loading -> Unit
+        }
     }
 
     private suspend fun fail(result: RestResult.Error) {

@@ -32,15 +32,20 @@ sqlite = "2.6.2"
 androidx-work = "2.12.0"
 aboutLibraries = "14.2.1"
 playAppUpdate = "2.1.0"
+firebaseBom = "34.18.0"
+firebaseCrashlyticsPlugin = "3.0.8"
+crashkios = "0.10.1"
 # cmpose:backend
 # GitLive Firebase KMP SDK: 2.7.0 is the newest 2.x (built with Kotlin 2.2.21, which Kotlin 2.3.21 reads;
 # 3.0.0 is alpha and needs Kotlin 2.4). Its Android side uses Firebase BoM 34.18.0, its iOS side was
 # built against firebase-ios-sdk 11.8.0 (the app links FirebaseAuth through SPM, 11.x)
 gitliveFirebase = "2.7.0"
-googleServices = "4.4.4"
 androidxCredentials = "1.6.0"
 googleId = "1.2.1"
 # /cmpose:backend
+# cmpose:firebase
+googleServices = "4.4.4"
+# /cmpose:firebase
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -105,6 +110,10 @@ play-review = { module = "com.google.android.play:review", version.ref = "playRe
 play-review-ktx = { module = "com.google.android.play:review-ktx", version.ref = "playReview" }
 play-app-update = { module = "com.google.android.play:app-update", version.ref = "playAppUpdate" }
 play-app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "playAppUpdate" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+crashkios-crashlytics = { module = "co.touchlab.crashkios:crashlytics", version.ref = "crashkios" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
@@ -140,6 +149,7 @@ feature-presentation-plugin = { id = "com.kturker.multiplatform.feature.presenta
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutLibraries" }
-# cmpose:backend
+firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlyticsPlugin" }
+# cmpose:firebase
 googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-# /cmpose:backend
+# /cmpose:firebase

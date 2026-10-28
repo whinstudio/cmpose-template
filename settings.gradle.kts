@@ -43,6 +43,7 @@ include(":core:api")
 include(":core:auth")
 // /cmpose:backend
 include(":core:ads")
+include(":core:insights")
 include(":core:database")
 include(":core:designsystem")
 include(":core:domain")

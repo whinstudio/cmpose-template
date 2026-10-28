@@ -20,11 +20,17 @@ internal enum class UiError {
 
 private const val UNAUTHORIZED = 401
 
+// The backend's 426 `CLIENT_UPGRADE_REQUIRED`
+private const val UPGRADE_REQUIRED = 426
+
 // The backend's 429 `RATE_LIMITED` (DELETE me counts against its strict limiter)
 private const val TOO_MANY_REQUESTS = 429
 
 /** A 401 that survived the token refresh: the session is gone and the user has to sign in again. */
 internal val DataError.isUnauthorized: Boolean get() = this is DataError.Http && code == UNAUTHORIZED
+
+/** A 426: the backend client has already opened the app-wide forced-update screen, so the screen shows nothing. */
+internal val DataError.isUpgradeRequired: Boolean get() = this is DataError.Http && code == UPGRADE_REQUIRED
 
 internal fun DataError.toUiError(): UiError = when {
     this is DataError.Network -> UiError.NETWORK

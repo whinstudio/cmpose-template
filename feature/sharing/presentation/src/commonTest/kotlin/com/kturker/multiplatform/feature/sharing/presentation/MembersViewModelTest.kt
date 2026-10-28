@@ -2,17 +2,23 @@ package com.kturker.multiplatform.feature.sharing.presentation
 
 import androidx.lifecycle.SavedStateHandle
 import com.kturker.multiplatform.core.api.ErrorCodes
+import com.kturker.multiplatform.core.api.Me
+import com.kturker.multiplatform.core.api.Member
 import com.kturker.multiplatform.core.api.PendingInvite
 import com.kturker.multiplatform.core.api.Role
+import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.auth.SignOutReason
 import com.kturker.multiplatform.core.domain.DataError
 import com.kturker.multiplatform.core.domain.RestResult
 import com.kturker.multiplatform.core.navigation.DEEP_LINK_SCHEME
 import com.kturker.multiplatform.feature.sharing.contract.MembersDestination
+import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesRepository
 import com.kturker.multiplatform.feature.sharing.presentation.share.InviteText
 import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 import com.kturker.multiplatform.feature.sharing.presentation.ui.members.MembersViewModel
 import com.kturker.multiplatform.feature.sharing.presentation.ui.members.daysLeft
+import com.kturker.multiplatform.feature.sharing.presentation.ui.members.shownName
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -53,7 +59,7 @@ class MembersViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = MembersViewModel(
+    private fun viewModel(repository: SpacesRepository = this.repository) = MembersViewModel(
         savedStateHandle = SavedStateHandle(mapOf(MembersDestination::spaceId.name to "home")),
         repository = repository,
         auth = auth,
@@ -104,6 +110,45 @@ class MembersViewModelTest {
         assertEquals(null, state.myUserId)
         assertEquals(null, state.error)
         assertFalse(state.members.any { state.isYou(it) })
+    }
+
+    // GET me, GET spaces and the members do not wait for each other: all three are asked before any answers
+    @Test
+    fun meSpacesAndMembersAreAskedTogether() = runTest {
+        val gated = GatedSpacesRepository(repository, log)
+        val viewModel = viewModel(gated)
+        advanceUntilIdle()
+
+        assertEquals(setOf("start:me", "start:list", "start:members:home"), log.toSet())
+        assertTrue(viewModel.state.value.loading)
+
+        gated.members.complete(RestResult.Success(listOf(me, bob)))
+        gated.list.complete(repository.listResult)
+        gated.me.complete(repository.meResult)
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertEquals(listOf(me, bob), state.members)
+        assertEquals("backend-me", state.myUserId)
+        // The invites wait for the role from GET spaces
+        assertTrue(log.indexOf("pendingInvites:home") > log.indexOf("list"))
+        assertFalse(state.loading)
+    }
+
+    // The members' answer came, but without the space (GET spaces failed) the screen shows only the error
+    @Test
+    fun aFailedSpaceListHidesTheMembers() = runTest {
+        repository.listResult = RestResult.Error(DataError.Network)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertTrue(state.members.isEmpty())
+        assertEquals(null, state.space)
+        assertEquals(SharingError.NETWORK, state.error)
+        assertFalse(state.loading)
+        assertEquals(0, log.count { it.startsWith("pendingInvites") })
     }
 
     @Test
@@ -384,5 +429,59 @@ class MembersViewModelTest {
         assertEquals(7, daysLeft(now + day * 7, now))
         assertEquals(7, daysLeft(now + day * 6 + 1, now))
         assertEquals(1, daysLeft(now, now))
+    }
+
+    // A quota error is not retried: dismissing it hides it without asking the server again
+    @Test
+    fun dismissingTheInviteLimitHidesItWithoutReloading() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.inviteResult = RestResult.Error(DataError.Http(409, ErrorCodes.QUOTA_EXCEEDED))
+        viewModel.share(Role.EDITOR)
+        advanceUntilIdle()
+        log.clear()
+
+        viewModel.dismissError()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.state.value.error)
+        assertTrue(log.isEmpty(), "$log")
+    }
+
+    // The display name, else the email, else a fixed label: an email sign-up has neither, and its row is never blank
+    @Test
+    fun aMemberWithoutNameOrEmailShowsTheUnnamedLabel() {
+        assertEquals("Ada", member("a", displayName = "Ada", email = "ada@example.com").shownName("No name"))
+        assertEquals("ada@example.com", member("a", displayName = " ", email = "ada@example.com").shownName("No name"))
+        assertEquals("No name", member("a", displayName = null, email = null).shownName("No name"))
+        assertEquals("No name", member("a", displayName = "", email = " ").shownName("No name"))
+    }
+}
+
+/**
+ * [inner] with GET me, GET spaces and the members held until the test completes their gate; each call appends
+ * "start:<call>" to [log] before it waits.
+ */
+private class GatedSpacesRepository(
+    inner: FakeSpacesRepository,
+    private val log: MutableList<String>
+) : SpacesRepository by inner {
+    val me = CompletableDeferred<RestResult<Me>>()
+    val list = CompletableDeferred<RestResult<List<Space>>>()
+    val members = CompletableDeferred<RestResult<List<Member>>>()
+
+    override suspend fun me(): RestResult<Me> {
+        log += "start:me"
+        return me.await().also { log += "me" }
+    }
+
+    override suspend fun list(): RestResult<List<Space>> {
+        log += "start:list"
+        return list.await().also { log += "list" }
+    }
+
+    override suspend fun members(id: String): RestResult<List<Member>> {
+        log += "start:members:$id"
+        return members.await().also { log += "members:$id" }
     }
 }

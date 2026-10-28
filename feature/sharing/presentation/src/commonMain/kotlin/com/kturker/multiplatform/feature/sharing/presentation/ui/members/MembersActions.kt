@@ -8,6 +8,9 @@ internal interface MembersActions {
     fun onBack()
     fun retry()
 
+    /** Hides an error that is not retried (a quota). */
+    fun dismissError()
+
     /** Opens the role picker for a new invite link. */
     fun startShare()
     fun dismissShare()

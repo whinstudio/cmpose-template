@@ -171,6 +171,24 @@ class SpacesViewModelTest {
         assertFalse(viewModel.state.value.busy)
     }
 
+    // A quota error is not retried: dismissing it hides it without asking the server again
+    @Test
+    fun dismissingTheSpaceLimitHidesItWithoutReloading() = runTest {
+        repository.createResult = RestResult.Error(DataError.Http(409, ErrorCodes.QUOTA_EXCEEDED))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.startCreate()
+        viewModel.submitName("Home")
+        advanceUntilIdle()
+        log.clear()
+
+        viewModel.dismissError()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.state.value.error)
+        assertTrue(log.isEmpty(), "$log")
+    }
+
     @Test
     fun aBlankNameIsNotSent() = runTest {
         val viewModel = viewModel()

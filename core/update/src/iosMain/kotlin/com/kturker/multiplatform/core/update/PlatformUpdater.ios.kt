@@ -25,6 +25,8 @@ internal class IosPlatformUpdater : PlatformUpdater {
 
     override fun completeUpdate() = Unit
 
+    override suspend fun startRequiredUpdate(url: String?) = openStore(url)
+
     // No URL: the App Store lookup found no page (the app is not on the App Store yet)
     override fun openStore(url: String?) {
         val storeUrl = url?.let { NSURL.URLWithString(it) }

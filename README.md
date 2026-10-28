@@ -118,6 +118,17 @@ Another app may claim the same scheme; for a more unique one, use your package n
 To add a table, add an `@Entity` and a `@Dao` in their own package, list the entity in `@Database(entities = …)` and add an abstract function and a `@Single` provider for the DAO in `AppDatabase.kt`. Once the app has shipped, changing a table needs a new `version` and a migration (`autoMigrations` or a `Migration`). `core/room/schemas/` keeps the schema of every version: commit it.
 <!-- /cmpose:room -->
 
+<!-- cmpose:insights -->
+## Insights: crash reports and analytics (Firebase)
+
+`core/insights` sends crashes to Firebase Crashlytics and events to Firebase Analytics, on Android and iOS. It stays off (every call does nothing) until you add your Firebase project's config files, which git ignores: `androidApp/google-services.json` and `iosApp/iosApp/GoogleService-Info.plist` (Firebase console → Project settings → your apps). With them, Android applies the google-services and Crashlytics Gradle plugins and iOS configures Firebase at launch; release builds upload the R8 mapping (Android) and the dSYMs (iOS, the *Upload Crashlytics symbols if configured* build step) so crash reports are readable.
+
+- **Crashes** are reported on the next launch. On iOS a Kotlin crash arrives with its Kotlin type and message (CrashKiOS), which is why `iosApp/iosApp/iOSApp.swift` configures Firebase before Kotlin starts. Warnings and errors logged through Kermit become Crashlytics breadcrumbs, and an error logged with a throwable (`log.e(throwable) { "…" }`) becomes a non-fatal issue (`InsightsLogWriter`). Never log tokens, request or response bodies, emails or names.
+- **The API** is `Insights` (Koin): `logEvent(name, params)`, `setUserId(id)` (your own user id, never an email), `recordNonFatal(throwable)`, `log(message)`, `setCollectionEnabled(enabled)`. Collection is on by default in every build; where your app needs consent first, call `setCollectionEnabled(false)` at start and turn it on once the user agrees.
+- **Try it:** with the config files in place, throw once (`throw RuntimeException("Test crash")` behind a button), open the app again, and the crash shows in the Crashlytics console within minutes. On iOS try it with a Release build: a Debug build makes no dSYMs, so its crash is not processed. For Analytics, turn on DebugView: `adb shell setprop debug.firebase.analytics.app <applicationId>` on Android, the `-FIRDebugEnabled` launch argument on iOS.
+- On iOS the Firebase SDK comes through Swift Package Manager (`FirebaseCrashlytics`, `FirebaseAnalytics`); Kotlin reaches it through `IosInsightsBridge`, which `iosApp/iosApp/InsightsBridge.swift` implements.
+<!-- /cmpose:insights -->
+
 <!-- cmpose:backend -->
 ## Local server
 

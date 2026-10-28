@@ -13,6 +13,10 @@ interface PlatformUpdater {
 
     // The app's store page: Google Play on Android (url is null), url on iOS
     fun openStore(url: String?)
+
+    // "Update" on the required screen. Android: Play's immediate update when Play offers one, else the store
+    // page; a cancelled flow leaves the screen up. iOS: openStore(url).
+    suspend fun startRequiredUpdate(url: String?)
 }
 
 // onDownloaded: Play has downloaded a flexible update and the app can restart into it (Android only)

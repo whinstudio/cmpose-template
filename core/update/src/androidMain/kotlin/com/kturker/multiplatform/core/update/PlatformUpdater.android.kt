@@ -59,6 +59,9 @@ internal class AndroidPlatformUpdater(
 
     private val manager: AppUpdateManager = AppUpdateManagerFactory.create(activity)
 
+    // A second "Update" tap before Play's screen covers the app
+    private val requiredUpdate = OneAtATime()
+
     private val listener = InstallStateUpdatedListener { state ->
         if (state.installStatus() == InstallStatus.DOWNLOADED) onDownloaded()
     }
@@ -95,6 +98,32 @@ internal class AndroidPlatformUpdater(
 
     override fun completeUpdate() {
         manager.completeUpdate()
+    }
+
+    // Play installs and restarts the app itself; a cancelled flow returns here with the required screen still up
+    override suspend fun startRequiredUpdate(url: String?) =
+        requiredUpdate.run { startImmediateOrOpenStore(url) }
+
+    private suspend fun startImmediateOrOpenStore(url: String?) {
+        val info = try {
+            manager.requestAppUpdateInfo()
+        } catch (e: InstallException) {
+            log.w { "Play update check unavailable: error ${e.errorCode}" }
+            openStore(url)
+            return
+        }
+        val availability = info.updateAvailability()
+        val path = requiredUpdatePath(
+            updateAvailable = availability == UpdateAvailability.UPDATE_AVAILABLE,
+            updateInProgress = availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS,
+            immediateAllowed = info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
+        )
+        val started = path == RequiredUpdatePath.Immediate && manager.startUpdateFlowForResult(
+            info,
+            launcher,
+            AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+        )
+        if (!started) openStore(url)
     }
 
     // The application ID is the package name: the Play Store app first, then the web page
