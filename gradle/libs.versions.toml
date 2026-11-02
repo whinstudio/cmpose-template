@@ -4,8 +4,8 @@ androidx-activity = "1.13.0"
 androidx-lifecycle = "2.9.6"
 composeMultiplatform = "1.11.1"
 datastore = "1.2.1"
-detekt = "2.0.0-alpha.3"
-kotlin = "2.3.21"
+detekt = "2.0.0-alpha.6"
+kotlin = "2.4.21"
 kotlinxCoroutinesCore = "1.11.0"
 navigationCompose = "2.9.2"
 koinCoreVersion = "4.2.1"
@@ -36,9 +36,11 @@ firebaseBom = "34.18.0"
 firebaseCrashlyticsPlugin = "3.0.8"
 crashkios = "0.10.1"
 # cmpose:backend
-# GitLive Firebase KMP SDK: 2.7.0 is the newest 2.x (built with Kotlin 2.2.21, which Kotlin 2.3.21 reads;
-# 3.0.0 is alpha and needs Kotlin 2.4). Its Android side uses Firebase BoM 34.18.0, its iOS side was
-# built against firebase-ios-sdk 11.8.0 (the app links FirebaseAuth through SPM, 11.x)
+# GitLive Firebase KMP SDK: 2.7.0 is the newest 2.x (built with Kotlin 2.2.21; checked under Kotlin 2.4.21:
+# core:auth compiles against it and its iOS klibs link into the Shared framework and the simulator app;
+# 3.0.0 is alpha and not adopted).
+# Its Android side uses Firebase BoM 34.18.0, its iOS side was built against firebase-ios-sdk 11.8.0 (the app
+# links FirebaseAuth through SPM, 11.x)
 gitliveFirebase = "2.7.0"
 androidxCredentials = "1.6.0"
 googleId = "1.2.1"

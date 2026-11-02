@@ -6,7 +6,7 @@ This project was generated with **[cmpose](https://github.com/whinstudio/cmpose)
 | Requirement | Version |
 |---|---|
 | JDK | 21 |
-| Kotlin | 2.3.21 |
+| Kotlin | 2.4.21 |
 | Compose Multiplatform | 1.11.1 |
 | Android Gradle Plugin | 9.2.1 |
 | Gradle (wrapper) | 9.7.0 |
