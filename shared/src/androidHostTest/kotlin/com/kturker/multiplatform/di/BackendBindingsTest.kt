@@ -8,9 +8,11 @@ import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.domain.BuildEnvironment
 import com.kturker.multiplatform.core.network.BACKEND_CLIENT
+import com.kturker.multiplatform.core.network.LocalServerStatus
 import com.kturker.multiplatform.core.network.TokenSource
 import io.ktor.client.HttpClient
 import org.koin.core.annotation.KoinInternalApi
+import org.koin.core.definition.Kind
 import org.koin.core.module.flatten
 import org.koin.core.qualifier.named
 import org.koin.dsl.koinApplication
@@ -43,6 +45,15 @@ class BackendBindingsTest {
         val auth = definitions.single { it.primaryType == AuthService::class }
 
         assertTrue(TokenSource::class in auth.secondaryTypes)
+    }
+
+    // The backend client sets it and the banner reads it: both must see the same instance
+    @Test
+    fun theLocalServerStatusIsASingle() {
+        val statuses = definitions.filter { it.primaryType == LocalServerStatus::class }
+
+        assertEquals(1, statuses.size)
+        assertEquals(Kind.Singleton, statuses.single().kind)
     }
 
     // Resolved, not only declared: its engine, the build type, the app's version and the token source all come from

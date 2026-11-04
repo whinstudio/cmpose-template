@@ -50,7 +50,13 @@ fun MainScreen(navigationManager: NavigationManager = koinInject()) {
     AppTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            topBar = { OfflineBanner(text = "No connection") },
+            topBar = {
+                OfflineBanner(text = "No connection")
+                // cmpose:backend
+                // Debug builds: the local server does not answer (LocalServerBanner.kt); hidden while offline
+                LocalServerBanner()
+                // /cmpose:backend
+            },
             content = { paddingValues ->
                 NavHost(
                     modifier = Modifier

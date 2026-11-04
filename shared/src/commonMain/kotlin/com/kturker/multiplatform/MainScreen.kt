@@ -65,7 +65,13 @@ fun MainScreen(
         CompositionLocalProvider(LocalStringResources provides resource) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
-                topBar = { OfflineBanner(text = LocalStringResources.current.offlineBanner) },
+                topBar = {
+                    OfflineBanner(text = LocalStringResources.current.offlineBanner)
+                    // cmpose:backend
+                    // Debug builds: the local server does not answer (LocalServerBanner.kt); hidden while offline
+                    LocalServerBanner()
+                    // /cmpose:backend
+                },
                 containerColor = MaterialTheme.colorScheme.background,
                 content = { paddingValues ->
                     NavHost(

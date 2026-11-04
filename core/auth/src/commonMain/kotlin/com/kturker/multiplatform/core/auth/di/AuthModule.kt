@@ -14,6 +14,7 @@ import com.kturker.multiplatform.core.domain.BuildEnvironment
 import com.kturker.multiplatform.core.image.ImageLoaderCustomizer
 import com.kturker.multiplatform.core.network.BACKEND_CLIENT
 import com.kturker.multiplatform.core.network.BackendConfig
+import com.kturker.multiplatform.core.network.LocalServerStatus
 import com.kturker.multiplatform.core.network.TokenSource
 import com.kturker.multiplatform.core.network.buildBackendClient
 import com.kturker.multiplatform.core.network.forgetToken
@@ -66,15 +67,21 @@ class AuthModule {
         @Provided environment: BuildEnvironment,
         @Provided signal: ForcedUpdateSignal,
         @Provided appInfo: AppInfo,
-        tokens: TokenSource
+        tokens: TokenSource,
+        localServerStatus: LocalServerStatus
     ): HttpClient = buildBackendClient(
         engine = engine,
         baseUrl = BackendConfig.baseUrl(environment),
         tokens = tokens,
         isDebug = environment.isDebug,
         clientVersion = appInfo.version.name,
-        onUpgradeRequired = signal::raise
+        onUpgradeRequired = signal::raise,
+        localServerStatus = localServerStatus
     )
+
+    // Whether the debug build's backend client reaches the local server; the shared LocalServerBanner shows it
+    @Single
+    fun provideLocalServerStatus(): LocalServerStatus = LocalServerStatus()
 
     // core:image's ImageLoader loads network images through the backend client (its bearer token, its host only)
     @Single

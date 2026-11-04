@@ -36,8 +36,8 @@ private val log = Logger.withTag("Network")
  * Builds the backend client: base URL, JSON, timeouts, logging, the signed-in user's bearer token and the app's
  * version ([clientVersion], sent as [CLIENT_VERSION_HEADER] only when it is `MAJOR.MINOR.PATCH`; otherwise a warning
  * is logged once and no header goes out). The backend's 426 calls [onUpgradeRequired] (the forced-update screen) and
- * still fails the request. Provided under [BACKEND_CLIENT] (core:auth), so it never replaces the app's unnamed
- * HttpClient.
+ * still fails the request. In debug builds a [localServerStatus] tracks whether the backend answers. Provided under
+ * [BACKEND_CLIENT] (core:auth), so it never replaces the app's unnamed HttpClient.
  */
 fun buildBackendClient(
     engine: HttpClientEngine,
@@ -45,7 +45,8 @@ fun buildBackendClient(
     tokens: TokenSource,
     isDebug: Boolean,
     clientVersion: String,
-    onUpgradeRequired: () -> Unit
+    onUpgradeRequired: () -> Unit,
+    localServerStatus: LocalServerStatus? = null
 ): HttpClient {
     val api = Url(baseUrl)
     val versionHeader = clientVersion.takeIf { VERSION_FORMAT.matches(it) }
@@ -62,6 +63,9 @@ fun buildBackendClient(
         defaultRequest {
             url(baseUrl)
         }
+
+        // First, so it wraps HttpTimeout and Auth: it sees the timeout's exception and the response after a 401 retry
+        if (isDebug && localServerStatus != null) installLocalServerWatch(localServerStatus) { it.isApi() }
 
         install(HttpTimeout) {
             requestTimeoutMillis = TIME_OUT
