@@ -1,7 +1,8 @@
 package com.kturker.multiplatform.core.network
 
 /**
- * Host the debug build reaches the Mac's local server on: 10.0.2.2 (Android emulator), localhost (physical
- * Android phone through `adb reverse tcp:18001 tcp:18001`, and the iOS simulator).
+ * Host the debug build reaches the Mac's local server on: localhost everywhere. The Android emulator and a
+ * physical Android phone reach it through `adb reverse tcp:18001 tcp:18001`; the iOS simulator shares the Mac's
+ * loopback directly.
  */
 expect fun localServerHost(): String

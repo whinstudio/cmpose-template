@@ -37,7 +37,7 @@ class BackendConfigTest {
     }
 
     @Test
-    fun theLocalServerHostIsOneTheDebugBuildMayReachOverPlainHttp() {
-        assertTrue(localServerHost() in setOf("10.0.2.2", "localhost"))
+    fun theDebugBuildReachesTheLocalServerAtLocalhost() {
+        assertEquals("localhost", localServerHost())
     }
 }

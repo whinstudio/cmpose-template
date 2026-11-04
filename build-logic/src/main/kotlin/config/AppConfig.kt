@@ -4,10 +4,10 @@ object AppConfig {
     const val applicationId = "com.kturker.multiplatform"
     const val appName = "Multiplatform"
 
-    const val compileSdkVersion = 36
+    const val compileSdkVersion = 37
     const val minSdkVersion = 30
 
-    const val targetSdkVersion = 36
+    const val targetSdkVersion = 37
 
     const val versionCode = 1
 

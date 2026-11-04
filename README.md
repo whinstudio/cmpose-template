@@ -7,10 +7,10 @@ This project was generated with **[cmpose](https://github.com/whinstudio/cmpose)
 |---|---|
 | JDK | 21 |
 | Kotlin | 2.4.21 |
-| Compose Multiplatform | 1.11.1 |
-| Android Gradle Plugin | 9.2.1 |
+| Compose Multiplatform | 1.12.2 |
+| Android Gradle Plugin | 9.5.0 |
 | Gradle (wrapper) | 9.7.0 |
-| Android compileSdk / targetSdk | 36 / 36 |
+| Android compileSdk / targetSdk | 37 / 37 |
 | Android minSdk | 30 |
 | iOS minimum | 18.2 |
 | Xcode | 16 or newer |
@@ -145,6 +145,8 @@ emulator or simulator:
 - `config.properties` needs `firebaseProjectId=<Firebase project id>` and may set `port=<n>`. A missing file, a bad
   port or a busy port stops the runner with a message and exit code 1.
 - `./gradlew :server:resetLocal` deletes `.local-server/` (database, files and config) to start from scratch.
+- Android debug builds (emulator, or a phone over USB) reach it after `adb reverse tcp:18001 tcp:18001`, run again
+  after each emulator start, USB reconnection or adb restart; see **Reaching the local server** below.
 
 The runner and the PostgreSQL binaries sit in the `local` source set, so the release jar (`:server:shadowJar`)
 carries neither. `./gradlew :server:build` compiles the server and runs its detekt and its tests (an included build,
@@ -177,9 +179,10 @@ drops the cached token and the previous user's selected space.
 
 **Reaching the local server** (debug builds; release builds use `RELEASE_BASE_URL`):
 
-- Android emulator: `10.0.2.2:18001`, the emulator's alias for the computer, chosen automatically.
-- Android phone over USB: run `adb reverse tcp:18001 tcp:18001` once per connection; the app then uses
-  `localhost:18001`, which the tunnel carries to the computer.
+- Android emulator and Android phone over USB: run `adb reverse tcp:18001 tcp:18001` again after each emulator
+  start, USB reconnection or adb restart; the app uses `localhost:18001`, which the tunnel carries to the computer. (In apps targeting
+  API 37, Android 17 requires the runtime `ACCESS_LOCAL_NETWORK` permission for the emulator's `10.0.2.2` alias,
+  which the template does not request; loopback is not local network.)
 - iOS simulator: `localhost:18001`, the Mac's own loopback. A physical iPhone cannot use `localhost`; it would need
   the Mac's address on the local network, which the template does not set and the debug App Transport Security
   exception does not cover.
