@@ -9,6 +9,7 @@ import com.kturker.multiplatform.feature.account.contract.LoginDestination
 import com.kturker.multiplatform.feature.sharing.contract.InviteDestination
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
 import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -16,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class MainScreenGateTest {
@@ -27,12 +29,14 @@ class MainScreenGateTest {
     private val tokens = SessionTokens { log += "forget" }
     private val selectedSpace = RecordingSelectedSpace(log)
     private val pendingInvites = MemoryPendingInvites(log)
+    private val reconnections = MutableSharedFlow<Unit>()
 
     private fun TestScope.gate() = SessionGate(
         home = Home,
         tokens = tokens,
         selectedSpace = selectedSpace,
         pendingInvites = pendingInvites,
+        reconnections = reconnections,
         scope = backgroundScope
     )
 
@@ -195,6 +199,66 @@ class MainScreenGateTest {
         assertEquals(1, selectedSpace.cancelledRefreshes)
     }
 
+    // An offline start shows no space; it loads when the connection comes back, without a screen reload
+    @Test
+    fun aReconnectionAfterAnOfflineStartRefreshesTheSelectedSpace() = runTest {
+        selectedSpace.offline = true
+        gate().onState(signedIn("u1"))
+        runCurrent()
+        assertNull(selectedSpace.current.value)
+        log.clear()
+
+        selectedSpace.offline = false
+        reconnections.emit(Unit)
+        runCurrent()
+
+        assertEquals(listOf("refresh"), log)
+        assertNotNull(selectedSpace.current.value)
+    }
+
+    @Test
+    fun aReconnectionWithASpaceAlreadyShownDoesNotRefresh() = runTest {
+        gate().onState(signedIn("u1"))
+        runCurrent()
+        log.clear()
+
+        reconnections.emit(Unit)
+        runCurrent()
+
+        assertEquals(emptyList(), log)
+    }
+
+    // Signed out while offline: the reconnection must not load the old user's space back
+    @Test
+    fun afterSignOutAReconnectionDoesNotRefresh() = runTest {
+        selectedSpace.offline = true
+        val gate = gate()
+        gate.onState(signedIn("u1"))
+        runCurrent()
+        gate.onState(AuthState.SignedOut)
+        runCurrent()
+        log.clear()
+
+        selectedSpace.offline = false
+        reconnections.emit(Unit)
+        runCurrent()
+
+        assertEquals(emptyList(), log)
+        assertNull(selectedSpace.current.value)
+    }
+
+    @Test
+    fun aSignedOutStartDoesNotRefreshOnAReconnection() = runTest {
+        gate().onState(AuthState.SignedOut)
+        runCurrent()
+        log.clear()
+
+        reconnections.emit(Unit)
+        runCurrent()
+
+        assertEquals(emptyList(), log)
+    }
+
     private fun signedIn(uid: String) = AuthState.SignedIn(uid = uid, email = null)
 
     private fun home(clear: Boolean) = NavigationCommand.NavigateTo(Home, clearBackStack = clear)
@@ -206,6 +270,9 @@ private class RecordingSelectedSpace(private val log: MutableList<String>) : Sel
     override val current = MutableStateFlow<Space?>(null)
     var suspendRefresh = false
     var cancelledRefreshes = 0
+
+    // A failed refresh (no connection) keeps what is shown, like PersistedSelectedSpace
+    var offline = false
 
     override suspend fun select(spaceId: String) {
         log += "select:$spaceId"
@@ -220,6 +287,7 @@ private class RecordingSelectedSpace(private val log: MutableList<String>) : Sel
                 cancelledRefreshes++
             }
         }
+        if (offline) return
         current.value = Space(id = "personal", name = "Personal", role = Role.OWNER, personal = true, memberCount = 1)
     }
 

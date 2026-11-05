@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+. A cloud restore can land on another app version or device: a stale preferences file or
+     database brings back an old session and an old schema, so both stay out of cloud backups. Device
+     transfer (user-initiated, phone to phone) keeps everything. The names come from DATA_STORE_FILE_NAME
+     (core/database) and DATABASE_FILE_NAME (core/room). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="multiplatform.preferences_pb" />
+        <exclude domain="database" path="app.db" />
+        <exclude domain="database" path="app.db-wal" />
+        <exclude domain="database" path="app.db-shm" />
+        <exclude domain="database" path="app.db-journal" />
+    </cloud-backup>
+</data-extraction-rules>

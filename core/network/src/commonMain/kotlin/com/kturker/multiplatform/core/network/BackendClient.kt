@@ -76,7 +76,6 @@ fun buildBackendClient(
                 Json {
                     ignoreUnknownKeys = true
                     isLenient = true
-                    prettyPrint = true
                 }
             )
         }

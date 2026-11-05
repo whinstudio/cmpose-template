@@ -95,13 +95,13 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun licensesOpenWithTheirTitle() {
+    fun licensesOpenWithTheirTitleAndBackLabel() {
         val navigationManager = RecordingNavigationManager()
         val viewModel = createViewModel(navigationManager = navigationManager)
 
-        viewModel.onLicensesClick(title = "Licenses")
+        viewModel.onLicensesClick(title = "Lisanslar", backLabel = "Geri")
 
-        assertEquals(LicensesDestination(title = "Licenses"), navigationManager.commands.last())
+        assertEquals(LicensesDestination(title = "Lisanslar", backLabel = "Geri"), navigationManager.commands.last())
     }
 }
 
@@ -187,5 +187,6 @@ private fun emptyStrings() = StringResourcesUiModel(
     favoritesTitle = "",
     addFavorite = "",
     removeFavorite = "",
-    retry = ""
+    retry = "",
+    back = ""
 )

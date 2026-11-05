@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.AuthState
 import com.kturker.multiplatform.core.auth.SessionTokens
+import com.kturker.multiplatform.core.domain.ConnectivityMonitor
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.feature.account.contract.LoginDestination
@@ -19,6 +20,8 @@ import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInvite
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -56,14 +59,16 @@ internal data class GateStep(val start: NavigationCommand.Destination?, val comm
  * The sign-in gate, keyed by uid. The first settled state starts the app on [home] or on the sign-in; every later
  * change of user (sign-in, sign-out, another account, a 401 that ended the session) drops the cached bearer token
  * and the previous user's selected space, then opens [home] or the sign-in on a cleared back stack. A signed-in
- * user's spaces load on [scope], and an invite that waited for the sign-in opens on top of [home], so its Accept
- * and Close go back there. A fresh sign-in as the same user (before deleting the account) changes nothing.
+ * user's spaces load on [scope], and again on each of [reconnections] while no space is shown (an offline start);
+ * an invite that waited for the sign-in opens on top of [home], so its Accept and Close go back there. A fresh
+ * sign-in as the same user (before deleting the account) changes nothing.
  */
 internal class SessionGate(
     private val home: NavigationCommand.Destination,
     private val tokens: SessionTokens,
     private val selectedSpace: SelectedSpace,
     private val pendingInvites: PendingInviteStore,
+    private val reconnections: Flow<Unit>,
     private val scope: CoroutineScope
 ) {
     private var started = false
@@ -81,14 +86,23 @@ internal class SessionGate(
 
         if (!first) {
             tokens.forget()
-            // The previous user's refresh would show their space to the next one
+            // The previous user's refresh (or a reconnection's) would show their space to the next one
             refresh?.cancelAndJoin()
         }
         // A signed-out start clears too: the last user's choice must not reach whoever signs in next
         if (!first || newUid == null) selectedSpace.clear()
         val target = gateTarget(state, pendingInvite = if (newUid != null) pendingInvites.take() else null)
-        if (newUid != null) refresh = scope.launch { selectedSpace.refresh() }
+        if (newUid != null) refresh = scope.launch { loadSpaces() }
         return step(target, first)
+    }
+
+    // The user's job: cancelling it stops the refresh and the reconnection collector together
+    private suspend fun loadSpaces() = coroutineScope {
+        var loading = launch { selectedSpace.refresh() }
+        // Started offline: nothing to show until the connection comes back
+        reconnections.collect {
+            if (selectedSpace.current.value == null && !loading.isActive) loading = launch { selectedSpace.refresh() }
+        }
     }
 
     private fun step(
@@ -119,10 +133,13 @@ internal fun rememberSessionStart(
     auth: AuthService = koinInject(),
     tokens: SessionTokens = koinInject(),
     selectedSpace: SelectedSpace = koinInject(),
-    pendingInvites: PendingInviteStore = koinInject()
+    pendingInvites: PendingInviteStore = koinInject(),
+    connectivity: ConnectivityMonitor = koinInject()
 ): NavigationCommand.Destination? {
     val scope = rememberCoroutineScope()
-    val gate = remember(auth) { SessionGate(home, tokens, selectedSpace, pendingInvites, scope) }
+    val gate = remember(auth) {
+        SessionGate(home, tokens, selectedSpace, pendingInvites, connectivity.reconnections(), scope)
+    }
     var start by remember { mutableStateOf<NavigationCommand.Destination?>(null) }
     LaunchedEffect(gate) {
         auth.state.collect { state ->

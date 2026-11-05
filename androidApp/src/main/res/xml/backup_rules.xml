@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and below (fullBackupContent). Same exclusions as data_extraction_rules.xml; these
+     versions cannot tell cloud backup from device transfer, so the rules cover both. -->
+<full-backup-content>
+    <exclude domain="file" path="multiplatform.preferences_pb" />
+    <exclude domain="database" path="app.db" />
+    <exclude domain="database" path="app.db-wal" />
+    <exclude domain="database" path="app.db-shm" />
+    <exclude domain="database" path="app.db-journal" />
+</full-backup-content>

@@ -36,5 +36,6 @@ internal val resourceEN = StringResourcesUiModel(
     favoritesTitle = "Favorites",
     addFavorite = "Add to favorites",
     removeFavorite = "Remove from favorites",
-    retry = "Try again"
+    retry = "Try again",
+    back = "Back"
 )

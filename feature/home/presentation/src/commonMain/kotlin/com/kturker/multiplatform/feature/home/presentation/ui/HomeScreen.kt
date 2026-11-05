@@ -65,6 +65,7 @@ private fun HomeScreen(
                     actions.onNavigateUp()
                 },
                 imageVector = IcBack,
+                contentDescription = strings.back,
                 tint = LocalColorsPalette.current.tintBlack
             )
 

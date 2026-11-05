@@ -9,8 +9,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 @Composable
 fun KtIcon(
     imageVector: ImageVector?,
+    // No default: a clickable or lone icon needs a label for screen readers, a decorative one passes null
+    contentDescription: String?,
     modifier: Modifier = Modifier,
-    contentDescription: String = "",
     tint: Color = Color.Unspecified
 ) {
     if (imageVector != null) {

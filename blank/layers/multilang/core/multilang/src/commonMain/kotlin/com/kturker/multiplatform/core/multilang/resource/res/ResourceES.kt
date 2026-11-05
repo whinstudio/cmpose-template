@@ -7,5 +7,13 @@ internal val resourceES = StringResourcesUiModel(
     themeLight = "Claro",
     themeSystem = "Sistema",
     themeDark = "Oscuro",
-    languageSystem = "Sistema"
+    languageSystem = "Sistema",
+    updateAvailableTitle = "Actualización disponible",
+    updateAvailableMessage = "Hay una nueva versión de la app.",
+    updateNow = "Actualizar",
+    updateLater = "Más tarde",
+    updateRequiredTitle = "Actualización necesaria",
+    updateRequiredMessage = "Esta versión ya no es compatible. Actualiza la app para continuar.",
+    updateDownloaded = "Actualización descargada",
+    updateRestart = "Reiniciar"
 )

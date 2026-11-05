@@ -25,6 +25,7 @@ private val log = Logger.withTag("About")
 @Composable
 internal fun LicensesRoute(
     title: String,
+    backLabel: String,
     source: LicensesSource = koinInject(),
     navigationManager: NavigationManager = koinInject()
 ) {
@@ -43,7 +44,9 @@ internal fun LicensesRoute(
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    TextButton(onClick = { navigationManager.navigate(NavigationCommand.NavigateUp) }) { Text("Back") }
+                    TextButton(onClick = { navigationManager.navigate(NavigationCommand.NavigateUp) }) {
+                        Text(backLabel)
+                    }
                 }
             )
         }

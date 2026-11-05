@@ -62,6 +62,7 @@ internal fun SettingsScreen(
                     actions.onNavigateUp()
                 }.align(Alignment.CenterStart),
                 imageVector = IcBack,
+                contentDescription = LocalStringResources.current.back,
                 tint = LocalColorsPalette.current.tintBlack
             )
 
@@ -121,9 +122,10 @@ internal fun SettingsScreen(
         }
 
         val licensesTitle = LocalStringResources.current.settingsLicenses
+        val backLabel = LocalStringResources.current.back
         SettingsLinkRow(
             text = licensesTitle,
-            onClick = { actions.onLicensesClick(title = licensesTitle) }
+            onClick = { actions.onLicensesClick(title = licensesTitle, backLabel = backLabel) }
         )
     }
 }

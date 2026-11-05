@@ -80,6 +80,11 @@ fun MainScreen(navigationManager: NavigationManager = koinInject()) {
                 }
             }
         )
+
+        // Update available / required (core/update): once a day at most; inside the theme for its dialog
+        AppUpdateEffect()
+        // FirstLaunchPaywall (purchases): the paywall once, at the first launch (feature/monetization)
+        FirstLaunchPaywall()
     }
 
     NavigationLaunchedEffect(
@@ -89,9 +94,4 @@ fun MainScreen(navigationManager: NavigationManager = koinInject()) {
 
     // Passes ReviewPrompter's requests (a positive moment, "Rate the app") to the platform
     ReviewRequestEffect()
-
-    // Update available / required (core/update): at most one check a day
-    AppUpdateEffect()
-    // FirstLaunchPaywall (purchases): the paywall once, at the first launch (feature/monetization)
-    FirstLaunchPaywall()
 }

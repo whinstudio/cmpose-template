@@ -10,5 +10,8 @@ internal interface SettingsActions {
     fun onPremiumClick()
     fun onAdExamplesClick()
     fun onRateAppClick()
-    fun onLicensesClick(title: String)
+    fun onLicensesClick(
+        title: String,
+        backLabel: String
+    )
 }

@@ -40,7 +40,8 @@ data class StringResourcesUiModel(
     val favoritesTitle: String,
     val addFavorite: String,
     val removeFavorite: String,
-    val retry: String
+    val retry: String,
+    val back: String
 )
 
 // GitHub answers 403 (primary limit) or 429 (secondary limit) once its request limit is used up

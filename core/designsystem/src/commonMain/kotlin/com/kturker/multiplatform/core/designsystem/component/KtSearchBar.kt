@@ -77,6 +77,8 @@ fun KtSearchBar(
                 KtIcon(
                     modifier = Modifier.size(24.dp),
                     imageVector = IcSearch,
+                    // Decorative: the field's placeholder says what it is for
+                    contentDescription = null,
                     tint = color.tintGrey
                 )
             }

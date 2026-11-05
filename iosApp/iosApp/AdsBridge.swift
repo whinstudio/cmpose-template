@@ -1,5 +1,6 @@
 import AppTrackingTransparency
 import GoogleMobileAds
+import os
 import Shared
 import UIKit
 import UserMessagingPlatform
@@ -24,6 +25,9 @@ final class AdsBridge: NSObject, IosAdsBridge {
     private var interstitialAd: InterstitialAd?
     private var rewardedAd: RewardedAd?
     private var presentation: PresentationDelegate?
+
+    // A banner holds its delegate weakly; one shared delegate serves every banner.
+    private let bannerDelegate = BannerLoadDelegate()
 
     // Consent loads here and is presented by presentConsent, which Kotlin calls only on the resumed ads
     // screen: the UMP consent form, then App Tracking Transparency, then the SDK (only once canRequestAds is
@@ -97,6 +101,7 @@ final class AdsBridge: NSObject, IosAdsBridge {
         // Lets UI tests (Maestro) find the banner by id.
         banner.accessibilityIdentifier = "BannerAd"
         banner.rootViewController = AdsBridge.topViewController()
+        banner.delegate = bannerDelegate
         banner.load(Request())
         return banner
     }
@@ -259,6 +264,16 @@ final class AdsBridge: NSObject, IosAdsBridge {
             top = presented
         }
         return top
+    }
+}
+
+// A failed load leaves the slot empty; the log says why.
+private final class BannerLoadDelegate: NSObject, BannerViewDelegate {
+    private let log = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "app", category: "Ads")
+
+    func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
+        let code = (error as NSError).code
+        log.warning("Banner failed to load: \(code, privacy: .public) \(error.localizedDescription, privacy: .public)")
     }
 }
 

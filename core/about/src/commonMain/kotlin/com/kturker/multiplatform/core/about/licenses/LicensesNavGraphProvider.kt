@@ -13,7 +13,8 @@ import org.koin.core.annotation.Single
 internal class LicensesNavGraphProvider : NavGraphProvider {
     override fun registerGraph(provider: NavGraphBuilder) {
         provider.composable<LicensesDestination> { entry ->
-            LicensesRoute(title = entry.toRoute<LicensesDestination>().title)
+            val destination = entry.toRoute<LicensesDestination>()
+            LicensesRoute(title = destination.title, backLabel = destination.backLabel)
         }
     }
 }

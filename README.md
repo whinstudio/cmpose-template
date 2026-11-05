@@ -156,7 +156,8 @@ so `./gradlew allTests` does not run them).
 
 Sign-in is required: `MainScreen.kt` shows the sign-in screen while nobody is signed in and the app's first screen
 after it (`SessionGate.kt`). When the user changes (sign-out, another account, a session the server ended), the app
-drops the cached token and the previous user's selected space.
+drops the cached token and the previous user's selected space. A start without a connection loads the selected space
+when the connection comes back.
 
 - `core/api`: the app's client models of the backend API, its requests and answers (`ApiModels.kt`) and paths
   (`ApiRoutes.kt`), checked against the server's OpenAPI description by `ApiContractTest`; the server does not use

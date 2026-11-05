@@ -88,6 +88,9 @@ internal class SettingsViewModel(
 
     override fun onRateAppClick() = reviewPrompter.openStorePage()
 
-    override fun onLicensesClick(title: String) =
-        navigationManager.navigate(navigationCommand = LicensesDestination(title = title))
+    override fun onLicensesClick(
+        title: String,
+        backLabel: String
+    ) =
+        navigationManager.navigate(navigationCommand = LicensesDestination(title = title, backLabel = backLabel))
 }

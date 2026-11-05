@@ -89,7 +89,7 @@ private fun OnboardingScreen(
                     actions.onNavigateToSettings()
                 },
                 imageVector = IcSettings,
-                contentDescription = "Settings",
+                contentDescription = LocalStringResources.current.settingsTitle,
                 tint = LocalColorsPalette.current.tintBlack
             )
         }

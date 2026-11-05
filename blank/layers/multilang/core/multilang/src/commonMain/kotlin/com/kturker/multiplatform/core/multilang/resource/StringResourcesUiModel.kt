@@ -10,5 +10,13 @@ data class StringResourcesUiModel(
     val themeLight: String,
     val themeSystem: String,
     val themeDark: String,
-    val languageSystem: String
+    val languageSystem: String,
+    val updateAvailableTitle: String,
+    val updateAvailableMessage: String,
+    val updateNow: String,
+    val updateLater: String,
+    val updateRequiredTitle: String,
+    val updateRequiredMessage: String,
+    val updateDownloaded: String,
+    val updateRestart: String
 )

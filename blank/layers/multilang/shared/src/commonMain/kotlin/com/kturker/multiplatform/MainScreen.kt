@@ -18,12 +18,14 @@ import androidx.navigation.compose.rememberNavController
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.image.ImageLoaderSetup
 import com.kturker.multiplatform.core.multilang.language.LanguageManager
+import com.kturker.multiplatform.core.multilang.resource.StringResourcesUiModel
 import com.kturker.multiplatform.core.navigation.FeatureEntry
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.review.ReviewRequestEffect
 import com.kturker.multiplatform.core.update.AppUpdateEffect
+import com.kturker.multiplatform.core.update.UpdateTexts
 import com.kturker.multiplatform.feature.monetization.presentation.paywall.FirstLaunchPaywall
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
@@ -97,6 +99,11 @@ fun MainScreen(
                     }
                 }
             )
+
+            // Update available / required (core/update): once a day at most; inside the theme for its dialog
+            AppUpdateEffect(texts = LocalStringResources.current.updateTexts())
+            // FirstLaunchPaywall (purchases): the paywall once, at the first launch (feature/monetization)
+            FirstLaunchPaywall()
         }
     }
 
@@ -107,9 +114,15 @@ fun MainScreen(
 
     // Passes ReviewPrompter's requests (a positive moment, "Rate the app") to the platform
     ReviewRequestEffect()
-
-    // Update available / required (core/update): at most one check a day
-    AppUpdateEffect()
-    // FirstLaunchPaywall (purchases): the paywall once, at the first launch (feature/monetization)
-    FirstLaunchPaywall()
 }
+
+private fun StringResourcesUiModel.updateTexts() = UpdateTexts(
+    availableTitle = updateAvailableTitle,
+    availableMessage = updateAvailableMessage,
+    update = updateNow,
+    later = updateLater,
+    requiredTitle = updateRequiredTitle,
+    requiredMessage = updateRequiredMessage,
+    downloaded = updateDownloaded,
+    restart = updateRestart
+)
