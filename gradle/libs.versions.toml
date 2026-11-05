@@ -23,24 +23,25 @@ androidxTestRunner = "1.7.0"
 androidxTestCore = "1.7.0"
 androidxTestExtJunit = "1.3.0"
 # /cmpose:backend
-revenuecat = "3.11.0"
+revenuecat = "4.0.0"
 adsMobileSdk = "1.6.0"
 ump = "4.0.0"
 playReview = "2.0.2"
 room = "2.8.5"
 sqlite = "2.7.1"
 androidx-work = "2.12.0"
-aboutLibraries = "14.2.1"
+aboutLibraries = "15.3.0"
 playAppUpdate = "2.1.0"
-firebaseBom = "34.18.0"
+firebaseBom = "35.1.0"
 firebaseCrashlyticsPlugin = "3.0.8"
 crashkios = "0.10.1"
 # cmpose:backend
 # GitLive Firebase KMP SDK: 2.7.0 is the newest 2.x (built with Kotlin 2.2.21; checked under Kotlin 2.4.21:
 # core:auth compiles against it and its iOS klibs link into the Shared framework and the simulator app;
 # 3.0.0 is alpha and not adopted).
-# Its Android side uses Firebase BoM 34.18.0, its iOS side was built against firebase-ios-sdk 11.8.0 (the app
-# links FirebaseAuth through SPM, 11.x)
+# Its Android side imports Firebase BoM 34.18.0; the app's BoM 35.1.0 overrides it and resolves firebase-auth
+# 25.0.0 (checked with a Google sign-in on Android, Nov 2026). Its iOS side was built against firebase-ios-sdk
+# 11.8.0 (the app links FirebaseAuth through SPM, 11.x).
 gitliveFirebase = "2.7.0"
 androidxCredentials = "1.6.0"
 googleId = "1.2.1"
