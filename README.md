@@ -80,11 +80,12 @@ Another app may claim the same scheme; for a more unique one, use your package n
 **App Links and Universal Links** (https links to your domain) are ready but off:
 1. Set `APP_LINK_HOST` in `DeepLinkConfig.kt` to your domain.
 2. Android: uncomment the `autoVerify` intent filter in `AndroidManifest.xml` with your host, and serve `https://<domain>/.well-known/assetlinks.json` with your package name and signing certificate's SHA-256 (`keytool -list -v -keystore …`; Play App Signing shows it in the Play Console).
-3. iOS: serve `https://<domain>/.well-known/apple-app-site-association` (`applinks` → your `TEAMID.bundleId`), copy `iosApp/Configuration/UniversalLinks.entitlements.example` to `iosApp/iosApp/iosApp.entitlements` with your domain, add `CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements` to `Config.xcconfig` and enable Associated Domains for the App ID.
+3. iOS: serve `https://<domain>/.well-known/apple-app-site-association` (`applinks` → your `TEAMID.bundleId`) and enable Associated Domains for the App ID. If `iosApp/iosApp/iosApp.entitlements` exists, add the `com.apple.developer.associated-domains` key from `iosApp/Configuration/UniversalLinks.entitlements.example` to it, with your domain. If it doesn't, copy that example to `iosApp/iosApp/iosApp.entitlements` with your domain and add `CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements` to `Config.xcconfig`.
 
 ## Before you ship
 
 - **Privacy policy and terms:** set `PRIVACY_POLICY_URL` and `TERMS_URL` in `core/about/.../LegalUrls.kt`. Both stores ask for a privacy policy URL; while a URL is empty its row stays hidden.
+- **Export compliance:** `ITSAppUsesNonExemptEncryption` is `false` in `iosApp/iosApp/Info.plist`, which fits an app that only uses standard HTTPS; an app with its own non-exempt encryption sets it to `true`.
 - **Version:** raise `versionCode`/`versionName` in `build-logic/.../AppConfig.kt` and `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` in `iosApp/Configuration/Config.xcconfig` together; the About row shows them.
 <!-- cmpose:backend -->
 - **Version and the server:** `MARKETING_VERSION` must equal `versionName`, and both must be `MAJOR.MINOR.PATCH` (for example `1.4.0`): the app sends it as `X-Client-Version` and the server's `MIN_CLIENT_VERSION` compares it, one version for both platforms. A version in any other form is not sent, so the server's minimum does not apply to that build.

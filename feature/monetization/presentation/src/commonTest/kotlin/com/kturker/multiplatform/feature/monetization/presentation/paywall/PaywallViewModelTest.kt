@@ -5,6 +5,7 @@ import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.about.AppVersion
 import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.core.about.LegalLinkKind
+import com.kturker.multiplatform.core.domain.BuildEnvironment
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.purchases.PackagePeriod
 import com.kturker.multiplatform.core.purchases.PaywallOffer
@@ -30,6 +31,9 @@ import kotlin.test.assertTrue
 private val WEEKLY = PaywallPackage("weekly", PackagePeriod.WEEKLY, "$2.99", "$12.99", null, null)
 private val MONTHLY = PaywallPackage("monthly", PackagePeriod.MONTHLY, "$4.99", null, null, null)
 private val ANNUAL = PaywallPackage("annual", PackagePeriod.ANNUAL, "$29.99", "$2.49", 50, "7 days")
+private val LIFETIME = PaywallPackage("lifetime", PackagePeriod.LIFETIME, "$79.99", null, null, null)
+private val PRIVACY = LegalLink(kind = LegalLinkKind.PrivacyPolicy, url = "https://example.com/privacy")
+private val TERMS = LegalLink(kind = LegalLinkKind.Terms, url = "https://example.com/terms")
 private val OFFER = PaywallOffer(listOf(WEEKLY, MONTHLY, ANNUAL))
 
 // viewModelScope runs on Dispatchers.Main, which the tests swap for an eager test dispatcher.
@@ -53,8 +57,10 @@ class PaywallViewModelTest {
 
     private fun createViewModel(
         purchasesManager: FakePurchasesManager,
-        legalLinks: List<LegalLink> = emptyList()
+        legalLinks: List<LegalLink> = emptyList(),
+        isDebug: Boolean = false
     ) = PaywallViewModel(
+        environment = BuildEnvironment(isDebug = isDebug),
         navigationManager = navigationManager,
         purchasesManager = purchasesManager,
         appInfo = FakeAppInfo(legalLinks)
@@ -205,6 +211,42 @@ class PaywallViewModelTest {
         val links = listOf(LegalLink(kind = LegalLinkKind.PrivacyPolicy, url = "https://example.com/privacy"))
 
         assertEquals(links, createViewModel(FakePurchasesManager(offerResult = OFFER), legalLinks = links).uiState.value.legalLinks)
+    }
+
+    @Test
+    fun aDebugBuildWithoutBothLegalLinksWarnsTheDeveloper() {
+        val viewModel = createViewModel(FakePurchasesManager(offerResult = OFFER), legalLinks = listOf(PRIVACY), isDebug = true)
+
+        assertTrue(viewModel.uiState.value.missingLegalLinks)
+    }
+
+    @Test
+    fun aReleaseBuildWithoutLegalLinksShowsNoWarning() {
+        val viewModel = createViewModel(FakePurchasesManager(offerResult = OFFER), isDebug = false)
+
+        assertFalse(viewModel.uiState.value.missingLegalLinks)
+    }
+
+    @Test
+    fun aDebugBuildWithBothLegalLinksShowsNoWarning() {
+        val viewModel = createViewModel(FakePurchasesManager(offerResult = OFFER), legalLinks = listOf(PRIVACY, TERMS), isDebug = true)
+
+        assertFalse(viewModel.uiState.value.missingLegalLinks)
+    }
+
+    @Test
+    fun subscriptionPlansShowTheRenewalTerms() {
+        assertTrue(PaywallUiState(isAvailable = true, offer = PaywallOffer(listOf(MONTHLY, ANNUAL))).showsRenewalTerms)
+    }
+
+    @Test
+    fun aLifetimeOnlyOfferShowsNoRenewalTerms() {
+        assertFalse(PaywallUiState(isAvailable = true, offer = PaywallOffer(listOf(LIFETIME))).showsRenewalTerms)
+    }
+
+    @Test
+    fun aMixedOfferShowsTheRenewalTerms() {
+        assertTrue(PaywallUiState(isAvailable = true, offer = PaywallOffer(listOf(LIFETIME, MONTHLY))).showsRenewalTerms)
     }
 }
 

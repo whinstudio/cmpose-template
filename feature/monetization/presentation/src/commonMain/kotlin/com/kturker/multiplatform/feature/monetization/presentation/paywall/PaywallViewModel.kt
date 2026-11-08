@@ -2,6 +2,7 @@ package com.kturker.multiplatform.feature.monetization.presentation.paywall
 
 import androidx.lifecycle.viewModelScope
 import com.kturker.multiplatform.core.about.AppInfo
+import com.kturker.multiplatform.core.domain.BuildEnvironment
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.presentation.CoreViewModel
@@ -21,6 +22,7 @@ internal const val PLANS_UNAVAILABLE_MESSAGE = "Plans could not be loaded. Check
 // Your app redraws PaywallScreen in its own design and keeps this ViewModel.
 @KoinViewModel
 internal class PaywallViewModel(
+    @Provided environment: BuildEnvironment,
     @Provided private val navigationManager: NavigationManager,
     @Provided private val purchasesManager: PurchasesManager,
     @Provided appInfo: AppInfo
@@ -28,7 +30,11 @@ internal class PaywallViewModel(
     PaywallActions {
 
     private val _uiState = MutableStateFlow(
-        PaywallUiState(isAvailable = purchasesManager.isAvailable, legalLinks = appInfo.legalLinks)
+        PaywallUiState(
+            isAvailable = purchasesManager.isAvailable,
+            legalLinks = appInfo.legalLinks,
+            missingLegalLinks = environment.isDebug && appInfo.legalLinks.size < 2
+        )
     )
     val uiState: StateFlow<PaywallUiState> = _uiState.asStateFlow()
 

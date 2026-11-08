@@ -38,6 +38,15 @@ private const val PURCHASES_DISABLED_MESSAGE =
     "Purchases are disabled in release builds that use a RevenueCat Test Store key. " +
         "Add your App Store / Play Store keys in PurchasesKeys.android.kt and PurchasesKeys.ios.kt."
 
+// Shown under the plans whenever one of them renews: the App Store and Google Play want these terms on the paywall
+private const val RENEWAL_TERMS =
+    "Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. " +
+        "Manage or cancel them in your App Store or Google Play account settings."
+
+// Debug builds only, until LegalUrls.kt has both links
+private const val MISSING_LEGAL_LINKS =
+    "Set PRIVACY_POLICY_URL and TERMS_URL in LegalUrls.kt before you ship: the stores want both links on this screen."
+
 // Placeholder benefits: list what premium unlocks in your app
 private val PREMIUM_BENEFITS = listOf("Remove ads", "Premium feature one", "Premium feature two")
 
@@ -153,7 +162,17 @@ private fun Plans(
         ) {
             Text("Restore purchases")
         }
+        if (uiState.showsRenewalTerms) {
+            Text(text = RENEWAL_TERMS, style = MaterialTheme.typography.bodySmall)
+        }
         LegalLinks(links = uiState.legalLinks)
+        if (uiState.missingLegalLinks) {
+            Text(
+                text = MISSING_LEGAL_LINKS,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }
 
