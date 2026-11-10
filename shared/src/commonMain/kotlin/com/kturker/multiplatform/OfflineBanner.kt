@@ -1,6 +1,10 @@
 package com.kturker.multiplatform
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,7 +26,12 @@ import org.koin.compose.getKoin
 internal fun OfflineBanner(text: String) {
     val monitor = getKoin().getOrNull<ConnectivityMonitor>() ?: return
     val isOnline by monitor.isOnline.collectAsState()
-    AnimatedVisibility(visible = !isOnline) {
+    // Fade only: the band sits in the top bar, so growing it would push the content down step by step
+    AnimatedVisibility(
+        visible = !isOnline,
+        enter = fadeIn(tween(240)),
+        exit = fadeOut(tween(120, easing = FastOutLinearInEasing))
+    ) {
         Text(
             text = text,
             modifier = Modifier

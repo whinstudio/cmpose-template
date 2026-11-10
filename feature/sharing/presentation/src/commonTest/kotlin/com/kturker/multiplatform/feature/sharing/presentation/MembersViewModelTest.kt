@@ -16,7 +16,6 @@ import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesReposit
 import com.kturker.multiplatform.feature.sharing.presentation.share.InviteText
 import com.kturker.multiplatform.feature.sharing.presentation.ui.SharingError
 import com.kturker.multiplatform.feature.sharing.presentation.ui.members.MembersViewModel
-import com.kturker.multiplatform.feature.sharing.presentation.ui.members.daysLeft
 import com.kturker.multiplatform.feature.sharing.presentation.ui.members.shownName
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -308,6 +307,40 @@ class MembersViewModelTest {
         assertFalse(state.loading)
     }
 
+    // The screen counts the days left from the latest load: a reload with the same list a day later still counts
+    @Test
+    fun eachInviteLoadCountsAsANewOne() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.invitesLoad)
+
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(listOf(editorInvite), viewModel.state.value.invites)
+        assertEquals(2, viewModel.state.value.invitesLoad)
+    }
+
+    // The old list may hold a link revoked or used meanwhile: after a failed load none is shown
+    @Test
+    fun aFailedInviteLoadDropsTheOldList() = runTest {
+        repository.pendingInvitesResult = RestResult.Success(listOf(editorInvite, viewerInvite))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(2, viewModel.state.value.invites.size)
+
+        repository.pendingInvitesResult = RestResult.Error(DataError.Network)
+        viewModel.retry()
+        advanceUntilIdle()
+        val state = viewModel.state.value
+
+        assertTrue(state.invites.isEmpty())
+        assertEquals(SharingError.NETWORK, state.error)
+        assertEquals(listOf(me, bob), state.members)
+        assertFalse(state.loading)
+    }
+
     // Only the owner sees the invites (the server answers anyone else 404): nobody else asks for them
     @Test
     fun nonOwnerDoesNotAskForInvites() = runTest {
@@ -417,18 +450,6 @@ class MembersViewModelTest {
         assertEquals(null, viewModel.state.value.error)
         assertTrue(viewModel.state.value.invites.isEmpty())
         assertFalse("refresh" in log)
-    }
-
-    // Any part of a day left counts as a whole day; an invite never shows zero days
-    @Test
-    fun daysLeftRoundsUpToWholeDays() {
-        val now = 1_000_000L
-        val day = 86_400_000L
-
-        assertEquals(1, daysLeft(now + 1, now))
-        assertEquals(7, daysLeft(now + day * 7, now))
-        assertEquals(7, daysLeft(now + day * 6 + 1, now))
-        assertEquals(1, daysLeft(now, now))
     }
 
     // A quota error is not retried: dismissing it hides it without asking the server again

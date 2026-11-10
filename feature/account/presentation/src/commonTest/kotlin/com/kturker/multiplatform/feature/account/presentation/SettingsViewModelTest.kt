@@ -1,20 +1,26 @@
 package com.kturker.multiplatform.feature.account.presentation
 
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.viewModelScope
 import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
+import com.kturker.multiplatform.core.auth.AuthFailure
 import com.kturker.multiplatform.core.auth.AuthResult
 import com.kturker.multiplatform.core.auth.AuthState
 import com.kturker.multiplatform.core.auth.SignOutReason
 import com.kturker.multiplatform.core.domain.DataError
 import com.kturker.multiplatform.core.domain.RestResult
 import com.kturker.multiplatform.core.navigation.NavigationCommand
+import com.kturker.multiplatform.feature.account.presentation.data.DataStorePendingDisplayName
 import com.kturker.multiplatform.feature.account.presentation.data.sharedOwnedCount
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 import com.kturker.multiplatform.feature.account.presentation.ui.settings.SettingsViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -37,6 +43,8 @@ class SettingsViewModelTest {
     private val repository = FakeAccountRepository(log)
     private val tokens = FakeSessionTokens(log)
     private val navigation = RecordingNavigationManager()
+    private val preferences = InMemoryPreferences()
+    private val pendingName = DataStorePendingDisplayName(preferences)
 
     @BeforeTest
     fun setUp() {
@@ -48,7 +56,7 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = SettingsViewModel(repository, auth, tokens, navigation)
+    private fun viewModel() = SettingsViewModel(repository, auth, tokens, navigation, pendingName)
 
     private fun TestScope.confirmedDeletion() = viewModel().apply {
         requestDelete()
@@ -77,6 +85,43 @@ class SettingsViewModelTest {
         viewModel().onBack()
 
         assertEquals(listOf<NavigationCommand>(NavigationCommand.NavigateUp), navigation.commands)
+    }
+
+    // Leaving mid-deletion would clear the ViewModel between DELETE /me and the Firebase deletion
+    @Test
+    fun backIsIgnoredWhileDeleting() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        repository.deleteServerAccountGate = gate
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.busy)
+
+        viewModel.onBack()
+
+        assertEquals(emptyList<NavigationCommand>(), navigation.commands)
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    // With the server data gone, a Firebase user left behind could sign in to an account the server no longer has
+    @Test
+    fun theFirebaseUserIsDeletedEvenWhenTheScreenGoes() = runTest {
+        auth.usesApple = true
+        val gate = CompletableDeferred<Unit>()
+        auth.revokeGate = gate
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+        assertEquals("revokeAppleToken", log.last())
+
+        viewModel.viewModelScope.cancel()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("revokeAppleToken", "deleteUser", "signOut", "forgetToken"),
+            log.takeLast(4)
+        )
+        assertEquals(AuthState.SignedOut, auth.state.value)
     }
 
     @Test
@@ -199,6 +244,32 @@ class SettingsViewModelTest {
         assertEquals(AuthState.SignedOut, auth.state.value)
     }
 
+    // Personal data does not outlive the account: a sign-up name still waiting for Firebase goes with it
+    @Test
+    fun aDeletedAccountLeavesNoPendingName() = runTest {
+        pendingName.put("u1", "Ada")
+        pendingName.put("u2", "Grace")
+
+        confirmedDeletion()
+        advanceUntilIdle()
+
+        val stored = preferences.data.first()
+        assertNull(stored[stringPreferencesKey("pendingDisplayName_u1")])
+        assertEquals("Grace", stored[stringPreferencesKey("pendingDisplayName_u2")])
+    }
+
+    // The account still exists: its name keeps waiting for Firebase
+    @Test
+    fun aFailedFirebaseDeletionKeepsThePendingName() = runTest {
+        auth.deleteUserResults[0] = AuthResult.Failure(AuthFailure.NETWORK)
+        pendingName.put("u1", "Ada")
+
+        confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals("Ada", preferences.data.first()[stringPreferencesKey("pendingDisplayName_u1")])
+    }
+
     @Test
     fun deleteAccountServerFailureKeepsFirebaseUser() = runTest {
         repository.deleteServerAccountResult = RestResult.Error(DataError.Http(500))
@@ -295,7 +366,7 @@ class SettingsViewModelTest {
         viewModel.reauthWithApple()
         advanceUntilIdle()
 
-        assertEquals(listOf("canDeleteNow", "signInWithApple"), log - "spaces")
+        assertEquals(listOf("canDeleteNow", "signInWithAppleToRevoke"), log - "spaces")
         assertFalse(viewModel.state.value.needsReauth)
         assertFalse(viewModel.state.value.busy)
     }
@@ -332,7 +403,7 @@ class SettingsViewModelTest {
 
         assertEquals(
             listOf(
-                "canDeleteNow", "signInWithApple", "forgetToken",
+                "canDeleteNow", "signInWithAppleToRevoke", "forgetToken",
                 "canDeleteNow", "deleteServerAccount", "deleteUser", "signOut", "forgetToken",
             ),
             log - "spaces"
@@ -364,6 +435,143 @@ class SettingsViewModelTest {
         assertEquals(listOf(SignOutReason.SESSION_ENDED), auth.signOutReasons)
         // The sign-in screen explains the ended session; no error is left on this one
         assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun anAppleUserSignsInAgainAndIsRevokedBeforeFirebaseDeletion() = runTest {
+        auth.usesApple = true
+
+        confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                "reauthenticateWithAppleToRevoke", "forgetToken", "canDeleteNow", "deleteServerAccount",
+                "revokeAppleToken", "deleteUser", "signOut", "forgetToken",
+            ),
+            log - "spaces"
+        )
+    }
+
+    @Test
+    fun closingTheAppleSheetDeletesNothing() = runTest {
+        auth.usesApple = true
+        auth.appleReauth[0] = AuthResult.Cancelled
+
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(listOf("reauthenticateWithAppleToRevoke"), log - "spaces")
+        assertFalse(viewModel.state.value.busy)
+        assertTrue(auth.state.value is AuthState.SignedIn)
+        assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun anotherAppleAccountDeletesNothing() = runTest {
+        auth.usesApple = true
+        auth.uidAfterSignIn = "u2"
+
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(listOf("reauthenticateWithAppleToRevoke"), log - "spaces")
+        assertFalse(viewModel.state.value.busy)
+    }
+
+    @Test
+    fun aFailedAppleSignInStillDeletesTheAccount() = runTest {
+        auth.usesApple = true
+        auth.appleReauth[0] = AuthResult.Failure(AuthFailure.UNAVAILABLE)
+
+        confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                "reauthenticateWithAppleToRevoke", "canDeleteNow", "deleteServerAccount",
+                "revokeAppleToken", "deleteUser", "signOut", "forgetToken",
+            ),
+            log - "spaces"
+        )
+    }
+
+    @Test
+    fun aServerFailureRevokesNothing() = runTest {
+        auth.usesApple = true
+        repository.deleteServerAccountResult = RestResult.Error(DataError.Http(500))
+
+        confirmedDeletion()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("reauthenticateWithAppleToRevoke", "forgetToken", "canDeleteNow", "deleteServerAccount"),
+            log - "spaces"
+        )
+    }
+
+    @Test
+    fun aRetrySignsInWithAppleAgain() = runTest {
+        auth.usesApple = true
+        repository.deleteServerAccountResult = RestResult.Error(DataError.Http(500))
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        repository.deleteServerAccountResult = RestResult.Success(Unit)
+        viewModel.requestDelete()
+        advanceUntilIdle()
+        viewModel.confirmDelete()
+        advanceUntilIdle()
+
+        assertEquals(2, log.count { it == "reauthenticateWithAppleToRevoke" })
+        assertTrue(auth.state.value is AuthState.SignedOut)
+    }
+
+    // The first prompt failed, so nothing is held yet: the sign-in that answers NeedsRecentLogin brings the token
+    @Test
+    fun aFailedAppleReauthThenAReauthRevokesBeforeDeletingFirebaseUser() = runTest {
+        auth.usesApple = true
+        auth.appleReauth[0] = AuthResult.Failure(AuthFailure.UNAVAILABLE)
+        auth.canDeleteNowResults.clear()
+        auth.canDeleteNowResults.addAll(listOf(AuthResult.NeedsRecentLogin, AuthResult.Success))
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+
+        viewModel.reauthWithApple()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                "reauthenticateWithAppleToRevoke", "canDeleteNow",
+                "signInWithAppleToRevoke", "forgetToken", "canDeleteNow", "deleteServerAccount",
+                "revokeAppleToken", "deleteUser", "signOut", "forgetToken",
+            ),
+            log - "spaces"
+        )
+    }
+
+    // Each round revokes what its own sign-in returned, always before Firebase is asked to delete the user
+    @Test
+    fun firebaseRefusingDeletionAsksForAFreshSignInAndRevokesAgain() = runTest {
+        auth.usesApple = true
+        auth.deleteUserResults.clear()
+        auth.deleteUserResults.addAll(listOf(AuthResult.NeedsRecentLogin, AuthResult.Success))
+        val viewModel = confirmedDeletion()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.needsReauth)
+
+        viewModel.reauthWithApple()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                "reauthenticateWithAppleToRevoke", "forgetToken", "canDeleteNow", "deleteServerAccount",
+                "revokeAppleToken", "deleteUser",
+                "signInWithAppleToRevoke", "forgetToken", "canDeleteNow", "deleteServerAccount",
+                "revokeAppleToken", "deleteUser", "signOut", "forgetToken",
+            ),
+            log - "spaces"
+        )
     }
 
     @Test

@@ -39,6 +39,7 @@ class LoginViewModelTest {
     private fun viewModel() = LoginViewModel(auth, profileSync).apply {
         onEmailChange("me@example.com")
         onPasswordChange("secret1")
+        onDisplayNameChange("Ada")
     }
 
     @Test
@@ -137,6 +138,7 @@ class LoginViewModelTest {
 
         viewModel.onEmailChange("me@example.com")
         viewModel.onPasswordChange("secret1")
+        viewModel.onDisplayNameChange("Ada")
         viewModel.signIn()
         viewModel.signUp()
         viewModel.signInWithGoogle()
@@ -155,5 +157,100 @@ class LoginViewModelTest {
 
         assertFalse(viewModel.state.value.firebaseUnavailable)
         assertTrue(viewModel.state.value.signInEnabled)
+    }
+
+    @Test
+    fun signUpSendsTheTrimmedNameOnce() = runTest {
+        val viewModel = viewModel()
+        viewModel.onDisplayNameChange("  Ada Lovelace ")
+
+        viewModel.signUp()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Ada Lovelace"), profileSync.signUps)
+        assertEquals(0, profileSync.calls)
+        // The name write belongs to ProfileSync: this screen closes as soon as the account exists
+        assertEquals(listOf("signUpWithEmail:me@example.com"), auth.log)
+    }
+
+    @Test
+    fun aBlankNameCreatesNoAccount() = runTest {
+        val viewModel = viewModel()
+        viewModel.onDisplayNameChange("   ")
+
+        assertFalse(viewModel.state.value.canCreateAccount)
+        viewModel.signUp()
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), auth.log)
+        assertEquals(emptyList(), profileSync.signUps)
+    }
+
+    @Test
+    fun aTakenEmailKeepsTheFormAndTheName() = runTest {
+        auth.emailSignUp[0] = AuthResult.Failure(AuthFailure.EMAIL_IN_USE)
+        val viewModel = viewModel()
+        viewModel.startCreatingAccount()
+
+        viewModel.signUp()
+        advanceUntilIdle()
+
+        assertEquals(UiError.EMAIL_IN_USE, viewModel.state.value.error)
+        assertTrue(viewModel.state.value.creatingAccount)
+        assertEquals("Ada", viewModel.state.value.displayName)
+        assertEquals(emptyList(), profileSync.signUps)
+    }
+
+    @Test
+    fun backIsIgnoredWhileTheAccountIsBeingCreated() = runTest {
+        auth.emailSignUp[0] = AuthResult.Failure(AuthFailure.EMAIL_IN_USE)
+        val viewModel = viewModel()
+        viewModel.startCreatingAccount()
+
+        viewModel.signUp()
+        viewModel.backToSignIn()
+        advanceUntilIdle()
+
+        // The answer belongs to the form that sent it
+        assertTrue(viewModel.state.value.creatingAccount)
+        assertEquals(UiError.EMAIL_IN_USE, viewModel.state.value.error)
+    }
+
+    @Test
+    fun theNameStopsAtTheServersLimit() = runTest {
+        val viewModel = viewModel()
+        viewModel.onDisplayNameChange("a".repeat(81))
+        assertEquals(80, viewModel.state.value.displayName.length)
+    }
+
+    @Test
+    fun anEmojiAtTheLimitIsNotCutInHalf() = runTest {
+        val viewModel = viewModel()
+        viewModel.onDisplayNameChange("a".repeat(79) + "😀")
+        assertEquals("a".repeat(79), viewModel.state.value.displayName)
+    }
+
+    @Test
+    fun spacesStayWhileTyping() = runTest {
+        val viewModel = viewModel()
+        viewModel.onDisplayNameChange("Ada ")
+        assertEquals("Ada ", viewModel.state.value.displayName)
+    }
+
+    @Test
+    fun switchingFormsClearsTheErrorAndKeepsWhatWasTyped() = runTest {
+        auth.emailSignIn[0] = AuthResult.Failure(AuthFailure.INVALID_CREDENTIALS)
+        val viewModel = viewModel()
+        viewModel.signIn()
+        advanceUntilIdle()
+
+        viewModel.startCreatingAccount()
+        assertTrue(viewModel.state.value.creatingAccount)
+        assertNull(viewModel.state.value.error)
+        assertEquals("me@example.com", viewModel.state.value.email)
+
+        viewModel.backToSignIn()
+        assertFalse(viewModel.state.value.creatingAccount)
+        assertEquals("Ada", viewModel.state.value.displayName)
     }
 }

@@ -1,7 +1,11 @@
 package com.kturker.multiplatform.feature.account.presentation
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import com.kturker.multiplatform.core.api.Profile
 import com.kturker.multiplatform.core.api.Space
+import com.kturker.multiplatform.core.auth.AuthFailure
 import com.kturker.multiplatform.core.auth.AuthResult
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.AuthState
@@ -12,11 +16,13 @@ import com.kturker.multiplatform.core.domain.RestResult
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.feature.account.presentation.data.AccountRepository
+import com.kturker.multiplatform.feature.account.presentation.data.PendingDisplayName
 import com.kturker.multiplatform.feature.account.presentation.data.ProfileSync
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 
 /**
@@ -39,12 +45,23 @@ internal class FakeAuthService(
     val apple = ArrayDeque(listOf<AuthResult>(AuthResult.Success))
     val deleteUserResults = ArrayDeque(listOf<AuthResult>(AuthResult.Success))
     val canDeleteNowResults = ArrayDeque(listOf<AuthResult>(AuthResult.Success))
+    val appleToRevoke = ArrayDeque(listOf<AuthResult>(AuthResult.Success))
+    val appleReauth = ArrayDeque(listOf<AuthResult>(AuthResult.Success))
+
+    /** Whether the signed-in user has an Apple sign-in. */
+    var usesApple = false
 
     /** The uid a successful sign-in leaves signed in; another account's uid simulates a switch. */
     var uidAfterSignIn = "u1"
 
     /** The display name Firebase reports for the current user. */
     var displayName: String? = null
+
+    /**
+     * What writing a display name to Firebase answers; a success also makes it [currentDisplayName]. Like the real
+     * service, a write for a uid that is not [currentUid] writes nothing and answers [AuthFailure.UNKNOWN].
+     */
+    var setDisplayNameResult: AuthResult = AuthResult.Success
 
     /**
      * Like the real service, whose [state] follows Firebase's listener: when true, a sign-in changes
@@ -78,6 +95,13 @@ internal class FakeAuthService(
     override suspend fun signUpWithEmail(email: String, password: String): AuthResult {
         log += "signUpWithEmail:$email"
         return signedIn(emailSignUp.next())
+    }
+
+    override suspend fun setDisplayName(uid: String, name: String): AuthResult {
+        if (uid != firebaseUid) return AuthResult.Failure(AuthFailure.UNKNOWN)
+        log += "setDisplayName:$name"
+        if (setDisplayNameResult == AuthResult.Success) displayName = name
+        return setDisplayNameResult
     }
 
     override suspend fun signInWithGoogle(): AuthResult {
@@ -114,6 +138,27 @@ internal class FakeAuthService(
         log += "canDeleteNow"
         return canDeleteNowResults.next()
     }
+
+    override fun usesAppleSignIn(): Boolean = usesApple
+
+    override suspend fun signInWithAppleToRevoke(): AuthResult {
+        log += "signInWithAppleToRevoke"
+        return signedIn(appleToRevoke.next())
+    }
+
+    override suspend fun reauthenticateWithAppleToRevoke(): AuthResult {
+        log += "reauthenticateWithAppleToRevoke"
+        return signedIn(appleReauth.next())
+    }
+
+    /** When set, revoking the Apple token waits for it: the first step after DELETE /me has answered. */
+    var revokeGate: CompletableDeferred<Unit>? = null
+
+    // Logged only for Apple users, so the call orders non-Apple tests assert stay as they are
+    override suspend fun revokeAppleToken() {
+        if (usesApple) log += "revokeAppleToken"
+        revokeGate?.await()
+    }
 }
 
 internal class FakeAccountRepository(val log: MutableList<String> = mutableListOf()) : AccountRepository {
@@ -137,8 +182,12 @@ internal class FakeAccountRepository(val log: MutableList<String> = mutableListO
         return updateProfileResult
     }
 
+    /** When set, DELETE /me waits for it before answering. */
+    var deleteServerAccountGate: CompletableDeferred<Unit>? = null
+
     override suspend fun deleteServerAccount(): RestResult<Unit> {
         log += "deleteServerAccount"
+        deleteServerAccountGate?.await()
         return deleteServerAccountResult
     }
 }
@@ -150,13 +199,19 @@ internal class FakeSessionTokens(private val log: MutableList<String>) : Session
     }
 }
 
-/** Counts the sign-ins it was told about. */
+/** Counts the sign-ins it was told about ([calls]) and keeps each sign-up's name ([signUps]). */
 internal class FakeProfileSync : ProfileSync {
     var calls = 0
         private set
 
+    val signUps = mutableListOf<String>()
+
     override fun afterSignIn() {
         calls++
+    }
+
+    override fun afterSignUp(displayName: String) {
+        signUps += displayName
     }
 }
 
@@ -183,5 +238,33 @@ internal class FakeSelectedSpace(val log: MutableList<String> = mutableListOf())
 
     override suspend fun clear() {
         log += "clearSelectedSpace"
+    }
+}
+
+/** Keeps the names in [names]; appends each put and clear to [log] (reads are not logged). */
+internal class FakePendingDisplayName(private val log: MutableList<String> = mutableListOf()) : PendingDisplayName {
+    val names = mutableMapOf<String, String>()
+
+    override suspend fun put(uid: String, name: String) {
+        log += "putPendingName:$uid:$name"
+        names[uid] = name
+    }
+
+    override suspend fun get(uid: String): String? = names[uid]
+
+    override suspend fun clear(uid: String) {
+        log += "clearPendingName:$uid"
+        names.remove(uid)
+    }
+}
+
+/** A DataStore held in memory, for the stores built on one. */
+internal class InMemoryPreferences : DataStore<Preferences> {
+    private val state = MutableStateFlow(emptyPreferences())
+    override val data: StateFlow<Preferences> = state
+
+    override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+        state.value = transform(state.value)
+        return state.value
     }
 }

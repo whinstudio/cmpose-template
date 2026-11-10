@@ -12,6 +12,8 @@ class SocialSignInResultTest {
     private class ThrowingSocialSignIn(private val error: Exception) : SocialSignIn {
         override suspend fun google(): SocialToken = throw error
         override suspend fun apple(): SocialToken = throw error
+        override suspend fun appleForCurrentUser(): SocialToken = throw error
+        override suspend fun revokeApple(token: String): Boolean = throw error
     }
 
     private val unreachedSignIn: suspend (SocialToken) -> AuthResult = { error("Firebase sign-in must not run") }
@@ -36,6 +38,8 @@ class SocialSignInResultTest {
         val social = object : SocialSignIn {
             override suspend fun google(): SocialToken = SocialToken.Google("id", null)
             override suspend fun apple(): SocialToken = SocialToken.Cancelled
+            override suspend fun appleForCurrentUser(): SocialToken = SocialToken.Cancelled
+            override suspend fun revokeApple(token: String): Boolean = false
         }
         val seen = mutableListOf<SocialToken>()
 

@@ -25,7 +25,7 @@ fun KtText(
     fontSize: TextUnit = TextUnit.Companion.Unspecified,
     fontFamily: FontFamily? = null,
     fontStyle: FontStyle? = null,
-    fontWeight: FontWeight? = FontWeight.Companion.Normal,
+    fontWeight: FontWeight? = null,
     letterSpacing: TextUnit = TextUnit.Companion.Unspecified,
     textDecoration: TextDecoration? = null,
     textAlign: TextAlign? = null,

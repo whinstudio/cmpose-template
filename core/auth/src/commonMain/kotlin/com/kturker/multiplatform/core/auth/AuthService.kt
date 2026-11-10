@@ -23,6 +23,16 @@ interface AuthService : TokenSource {
         email: String,
         password: String
     ): AuthResult
+
+    /**
+     * Writes [name] to the Firebase profile of the user [uid], where [currentDisplayName] then reads it. Writes only
+     * while that user is the signed-in one: with nobody or another user signed in it answers
+     * [AuthFailure.UNKNOWN] and writes nothing.
+     */
+    suspend fun setDisplayName(
+        uid: String,
+        name: String
+    ): AuthResult
     suspend fun signInWithGoogle(): AuthResult
     suspend fun signInWithApple(): AuthResult
 
@@ -37,4 +47,25 @@ interface AuthService : TokenSource {
 
     /** Proves the session is recent enough to delete the account, without deleting anything. */
     suspend fun canDeleteNow(): AuthResult
+
+    /** True when the current user signs in with Apple, whose token account deletion has to revoke. */
+    fun usesAppleSignIn(): Boolean
+
+    /**
+     * The same sign-in as [signInWithApple], which can replace the current user. It keeps the token
+     * [revokeAppleToken] needs only when the sign-in succeeds.
+     */
+    suspend fun signInWithAppleToRevoke(): AuthResult
+
+    /**
+     * Asks Apple again for the current user without replacing them, and keeps the token [revokeAppleToken] needs
+     * only when that succeeds. Another Apple ID answers [AuthResult.Cancelled].
+     */
+    suspend fun reauthenticateWithAppleToRevoke(): AuthResult
+
+    /**
+     * Revokes the token [signInWithAppleToRevoke] or [reauthenticateWithAppleToRevoke] kept, at most once; only
+     * cancellation throws.
+     */
+    suspend fun revokeAppleToken()
 }

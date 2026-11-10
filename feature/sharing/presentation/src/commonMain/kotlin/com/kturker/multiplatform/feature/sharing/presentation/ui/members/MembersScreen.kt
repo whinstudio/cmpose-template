@@ -55,8 +55,8 @@ private fun MembersScreen(
     actions: MembersActions
 ) {
     val strings = LocalStringResources.current.sharing
-    // The days left are counted from when the invites were last loaded
-    val now = remember(state.invites) { Clock.System.now().toEpochMilliseconds() }
+    // The days left are counted from the latest invite load, even one that returned the same list
+    val now = remember(state.invitesLoad) { Clock.System.now().toEpochMilliseconds() }
     Scaffold(
         topBar = {
             TopAppBar(

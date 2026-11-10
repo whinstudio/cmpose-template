@@ -10,7 +10,13 @@ interface IosSignInBridge {
     val firebaseConfigured: Boolean
 
     fun google(completion: (idToken: String?, accessToken: String?, error: String?) -> Unit)
-    fun apple(completion: (idToken: String?, rawNonce: String?, error: String?) -> Unit)
+    fun apple(
+        completion: (idToken: String?, rawNonce: String?, error: String?, authorizationCode: String?) -> Unit
+    )
+    fun revokeApple(
+        authorizationCode: String,
+        completion: (error: String?) -> Unit
+    )
 }
 
 internal class IosSocialSignIn(private val bridge: IosSignInBridge) : SocialSignIn {
@@ -22,10 +28,19 @@ internal class IosSocialSignIn(private val bridge: IosSignInBridge) : SocialSign
     }
 
     override suspend fun apple(): SocialToken = suspendCancellableCoroutine { continuation ->
-        bridge.apple { idToken, rawNonce, error ->
-            if (continuation.isActive) continuation.resume(appleTokenOf(idToken, rawNonce, error))
+        bridge.apple { idToken, rawNonce, error, authorizationCode ->
+            if (continuation.isActive) continuation.resume(appleTokenOf(idToken, rawNonce, error, authorizationCode))
         }
     }
+
+    override suspend fun appleForCurrentUser(): SocialToken = apple()
+
+    override suspend fun revokeApple(token: String): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            bridge.revokeApple(token) { error ->
+                if (continuation.isActive) continuation.resume(error == null)
+            }
+        }
 }
 
 internal actual fun platformSocialSignIn(): SocialSignIn = IosSocialSignIn(bridge = getKoin().get())

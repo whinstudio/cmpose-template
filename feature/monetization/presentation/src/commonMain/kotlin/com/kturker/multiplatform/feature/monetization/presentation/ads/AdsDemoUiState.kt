@@ -12,7 +12,7 @@ internal data class AdsDemoUiState(
     // A full-screen ad is loading or on screen: the buttons wait for its result.
     val adBusy: Boolean = false,
     val coins: Int = 0,
-    val message: String? = null
+    val message: AdsMessage? = null
 ) {
     val canShowAds: Boolean get() = consentReady && !adBusy
 
@@ -22,4 +22,16 @@ internal data class AdsDemoUiState(
     val showPrivacyOptionsButton: Boolean get() = privacyOptionsRequired
 
     val showBanner: Boolean get() = consentReady && adFree == false
+}
+
+// A note under the buttons, as a reason: the screen picks the text
+internal sealed interface AdsMessage {
+    data object ConsentFailed : AdsMessage
+
+    data object InterstitialPaced : AdsMessage
+
+    data object InterstitialSkipped : AdsMessage
+
+    // reason: the SDK's own text, shown as it is
+    data class AdFailed(val reason: String) : AdsMessage
 }

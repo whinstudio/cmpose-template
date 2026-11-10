@@ -17,7 +17,7 @@ import com.kturker.multiplatform.core.presentation.CoreViewModel
 import com.kturker.multiplatform.feature.account.contract.LoginDestination
 import com.kturker.multiplatform.feature.sharing.contract.InviteDestination
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
-import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
+import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteTokenStore
 import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesRepository
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_NOT_FOUND
 import com.kturker.multiplatform.feature.sharing.presentation.ui.HTTP_TOO_MANY_REQUESTS
@@ -41,7 +41,7 @@ private const val HTTP_GONE = 410
 
 /**
  * An invite link's preview and acceptance. Opened while nobody is signed in, it keeps the token in
- * [PendingInviteStore] and opens the sign-in; the app shell takes the token after the sign-in and opens this
+ * [PendingInviteTokenStore] and opens the sign-in; the app shell takes the token after the sign-in and opens this
  * screen again. Accepting selects the joined space and goes back to the app.
  */
 @KoinViewModel
@@ -50,7 +50,7 @@ internal class InviteViewModel(
     private val repository: SpacesRepository,
     @Provided private val auth: AuthService,
     @Provided private val tokens: SessionTokens,
-    private val pendingInvites: PendingInviteStore,
+    private val pendingInvites: PendingInviteTokenStore,
     private val selectedSpace: SelectedSpace,
     @Provided private val navigationManager: NavigationManager
 ) : CoreViewModel(),

@@ -58,3 +58,9 @@ internal fun socialResultOf(code: String?): AuthResult {
         result
     }
 }
+
+/** Firebase's answer to reauthenticating with a social account: another account keeps the user and backs out. */
+internal fun reauthResultOf(code: String?): AuthResult = when (code) {
+    "ERROR_USER_MISMATCH", "17024" -> AuthResult.Cancelled
+    else -> socialResultOf(code)
+}

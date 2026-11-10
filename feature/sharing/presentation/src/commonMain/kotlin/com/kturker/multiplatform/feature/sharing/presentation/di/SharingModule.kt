@@ -7,9 +7,9 @@ import com.kturker.multiplatform.core.multilang.resource.shareInviteText
 import com.kturker.multiplatform.core.multilang.resource.sharing
 import com.kturker.multiplatform.core.network.BACKEND_CLIENT
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
-import com.kturker.multiplatform.feature.sharing.presentation.data.DataStorePendingInviteStore
+import com.kturker.multiplatform.feature.sharing.presentation.data.DataStorePendingInviteTokenStore
 import com.kturker.multiplatform.feature.sharing.presentation.data.KtorSpacesRepository
-import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
+import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteTokenStore
 import com.kturker.multiplatform.feature.sharing.presentation.data.PersistedSelectedSpace
 import com.kturker.multiplatform.feature.sharing.presentation.data.SpacesRepository
 import com.kturker.multiplatform.feature.sharing.presentation.share.InviteText
@@ -40,8 +40,9 @@ class SharingModule {
     ): SelectedSpace = PersistedSelectedSpace(repository, dataStore)
 
     @Single
-    fun providePendingInviteStore(@Provided dataStore: DataStore<Preferences>): PendingInviteStore =
-        DataStorePendingInviteStore(dataStore)
+    fun providePendingInviteTokenStore(
+        @Provided dataStore: DataStore<Preferences>
+    ): PendingInviteTokenStore = DataStorePendingInviteTokenStore(dataStore)
 
     @Single
     fun provideTextSharer(): TextSharer = ShareSheet()

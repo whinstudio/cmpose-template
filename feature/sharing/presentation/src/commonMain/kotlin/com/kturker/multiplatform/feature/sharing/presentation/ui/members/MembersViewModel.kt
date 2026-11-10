@@ -166,7 +166,7 @@ internal class MembersViewModel(
         val space = (spaces as? RestResult.Success)?.result?.firstOrNull { it.id == spaceId }
         if (space == null) {
             val error = failures.noAccess()
-            return _state.update { it.copy(loading = false, error = error) }
+            return _state.update { it.copy(invites = emptyList(), loading = false, error = error) }
         }
         when (members) {
             is RestResult.Success -> {
@@ -187,7 +187,7 @@ internal class MembersViewModel(
         }
         when (val invites = repository.pendingInvites(spaceId)) {
             is RestResult.Success -> _state.update {
-                it.copy(invites = invites.result, loading = false, error = null)
+                it.copy(invites = invites.result, invitesLoad = it.invitesLoad + 1, loading = false, error = null)
             }
 
             is RestResult.Error -> fail(invites)
@@ -206,8 +206,9 @@ internal class MembersViewModel(
         }
     }
 
+    // A failed load drops the invite links: the old list may hold one revoked or used meanwhile
     private suspend fun fail(result: RestResult.Error) {
         val error = failures.handle(result.error)
-        _state.update { it.copy(loading = false, error = error) }
+        _state.update { it.copy(invites = emptyList(), loading = false, error = error) }
     }
 }

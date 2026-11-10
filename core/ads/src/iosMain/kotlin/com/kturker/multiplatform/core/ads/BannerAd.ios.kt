@@ -13,6 +13,7 @@ private const val BANNER_HEIGHT = 50
 
 @Composable
 actual fun BannerAd(modifier: Modifier) {
+    if (rememberAdsOffForAutomation()) return
     UIKitView(
         factory = { IosAds.requireBridge().makeBanner(AdUnitIds.banner) },
         modifier = modifier.size(width = BANNER_WIDTH.dp, height = BANNER_HEIGHT.dp),

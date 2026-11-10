@@ -17,11 +17,12 @@ internal fun googleTokenOf(
 internal fun appleTokenOf(
     idToken: String?,
     rawNonce: String?,
-    error: String?
+    error: String?,
+    authorizationCode: String? = null
 ): SocialToken {
     bridgeError(error)?.let { return it }
     return if (idToken != null && rawNonce != null) {
-        SocialToken.Apple(idToken, rawNonce)
+        SocialToken.Apple(idToken, rawNonce, authorizationCode)
     } else {
         SocialToken.Failed(AuthFailure.UNKNOWN)
     }

@@ -9,12 +9,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kturker.multiplatform.core.database.theme.ThemeMode
 import com.kturker.multiplatform.core.designsystem.component.KtIcon
@@ -32,6 +32,7 @@ import com.kturker.multiplatform.core.designsystem.component.KtText
 import com.kturker.multiplatform.core.designsystem.icon.IcBack
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.designsystem.theme.LocalColorsPalette
+import com.kturker.multiplatform.core.designsystem.theme.Spacing
 import com.kturker.multiplatform.core.multilang.language.AppLanguage
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -54,24 +55,26 @@ internal fun SettingsScreen(
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
         Box(Modifier.fillMaxWidth()) {
             KtIcon(
-                modifier = Modifier.padding(all = 16.dp).size(size = 24.dp).clickable {
-                    actions.onNavigateUp()
-                }.align(Alignment.CenterStart),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(all = Spacing.xs)
+                    .size(size = 48.dp)
+                    .clickable { actions.onNavigateUp() }
+                    .padding(all = Spacing.md),
                 imageVector = IcBack,
                 contentDescription = LocalStringResources.current.back,
-                tint = LocalColorsPalette.current.tintBlack
+                tint = LocalColorsPalette.current.tintPrimary
             )
 
             KtText(
                 modifier = Modifier.align(Alignment.Center),
                 text = LocalStringResources.current.settingsTitle,
-                color = LocalColorsPalette.current.textBlack,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
+                color = LocalColorsPalette.current.textPrimary,
+                style = MaterialTheme.typography.titleMedium
             )
         }
 
@@ -138,19 +141,19 @@ private fun SettingsValueRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         KtText(
             text = label,
-            color = LocalColorsPalette.current.textBlack,
-            fontSize = 16.sp
+            color = LocalColorsPalette.current.textPrimary,
+            style = MaterialTheme.typography.bodyLarge
         )
 
         KtText(
             text = value,
-            color = LocalColorsPalette.current.textGray,
-            fontSize = 16.sp
+            color = LocalColorsPalette.current.textSecondary,
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }
@@ -164,10 +167,10 @@ private fun SettingsLinkRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         text = text,
-        color = LocalColorsPalette.current.textBlack,
-        fontSize = 16.sp
+        color = LocalColorsPalette.current.textPrimary,
+        style = MaterialTheme.typography.bodyLarge
     )
 }
 
@@ -188,10 +191,10 @@ private fun ThemeModeToggle(
 
     Row(
         modifier = modifier
-            .clip(shape = RoundedCornerShape(percent = 12))
+            .clip(shape = MaterialTheme.shapes.medium)
             .background(color.toggleBackground)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(Spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
     ) {
         modes.forEach { (mode, label) ->
             val isSelected = mode == selectedMode
@@ -200,7 +203,7 @@ private fun ThemeModeToggle(
 
             Box(
                 modifier = Modifier
-                    .clip(shape = RoundedCornerShape(50))
+                    .clip(shape = CircleShape)
                     .background(
                         color = if (isSelected) {
                             color.toggleSelectedBackground
@@ -209,14 +212,15 @@ private fun ThemeModeToggle(
                         }
                     )
                     .clickable { onModeChange(mode) }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
+                KtText(
                     text = label,
                     color = textColor,
-                    fontSize = 14.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -232,9 +236,9 @@ private fun LanguageModeToggle(
     val color = LocalColorsPalette.current
 
     FlowRow(
-        modifier = modifier.clip(RoundedCornerShape(12))
+        modifier = modifier.clip(MaterialTheme.shapes.medium)
             .background(color.toggleBackground)
-            .padding(4.dp),
+            .padding(Spacing.xs),
         maxItemsInEachRow = 4
     ) {
         AppLanguage.entries.forEach { language ->
@@ -244,7 +248,7 @@ private fun LanguageModeToggle(
 
             Box(
                 modifier = Modifier
-                    .clip(shape = RoundedCornerShape(50))
+                    .clip(shape = CircleShape)
                     .background(
                         color = if (isSelected) {
                             color.toggleSelectedBackground
@@ -253,14 +257,15 @@ private fun LanguageModeToggle(
                         }
                     )
                     .clickable { onLanguageChange(language) }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
+                KtText(
                     text = language.displayName ?: LocalStringResources.current.languageSystem,
                     color = textColor,
-                    fontSize = 14.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }

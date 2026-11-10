@@ -59,6 +59,8 @@ class OnboardingViewModelTest {
         avatarUrl = "https://avatars.githubusercontent.com/u/583231",
         name = null
     )
+    // The fake favorites flow emits at once, so every view model has its favorites loaded
+    private val loaded = OnboardingUiState(favoritesLoaded = true)
     private val favoritesRepository = FakeFavoritesRepository()
     private val searchedNames = mutableListOf<String>()
     private val navigationManager = RecordingNavigationManager()
@@ -103,7 +105,7 @@ class OnboardingViewModelTest {
 
         viewModel.onQueryChanged(username = "octo")
 
-        assertEquals(OnboardingUiState(query = "octo"), viewModel.uiState.value)
+        assertEquals(loaded.copy(query = "octo"), viewModel.uiState.value)
     }
 
     @Test
@@ -126,7 +128,7 @@ class OnboardingViewModelTest {
 
         release.complete(Unit)
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
-        assertEquals(OnboardingUiState(query = "oc", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "oc", users = listOf(octocat), searchedQuery = "oc"), state)
         assertEquals(listOf("oc"), searchedNames)
     }
 
@@ -150,7 +152,7 @@ class OnboardingViewModelTest {
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
         advanceTimeBy(SEARCH_DEBOUNCE_MILLIS + 1)
 
-        assertEquals(OnboardingUiState(query = "octo", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "octo", users = listOf(octocat), searchedQuery = "octo"), state)
         assertFalse(viewModel.uiState.value.isLoading)
         assertEquals(listOf("octo"), searchedNames)
     }
@@ -163,7 +165,7 @@ class OnboardingViewModelTest {
         viewModel.onQueryChanged(username = "")
         advanceUntilIdle()
 
-        assertEquals(OnboardingUiState(), viewModel.uiState.value)
+        assertEquals(loaded, viewModel.uiState.value)
         assertEquals(emptyList<String>(), searchedNames)
     }
 
@@ -187,7 +189,7 @@ class OnboardingViewModelTest {
         cancelled.await()
         advanceUntilIdle()
 
-        assertEquals(OnboardingUiState(query = "  "), viewModel.uiState.value)
+        assertEquals(loaded.copy(query = "  "), viewModel.uiState.value)
         assertEquals(listOf("octo"), searchedNames)
     }
 
@@ -199,7 +201,7 @@ class OnboardingViewModelTest {
 
         viewModel.onQueryChanged(username = "")
 
-        assertEquals(OnboardingUiState(), viewModel.uiState.value)
+        assertEquals(loaded, viewModel.uiState.value)
     }
 
     @Test
@@ -217,7 +219,7 @@ class OnboardingViewModelTest {
 
         advanceTimeBy(SEARCH_DEBOUNCE_MILLIS + 1)
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
-        assertEquals(OnboardingUiState(query = "x", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "x", users = listOf(octocat), searchedQuery = "x"), state)
         assertEquals(listOf("octo", "x"), searchedNames)
     }
 
@@ -228,7 +230,7 @@ class OnboardingViewModelTest {
         viewModel.onQueryChanged(username = "octo")
         val state = viewModel.uiState.first { it.error != null && !it.isLoading }
 
-        assertEquals(OnboardingUiState(query = "octo", error = DataError.Http(code = 403)), state)
+        assertEquals(loaded.copy(query = "octo", error = DataError.Http(code = 403)), state)
     }
 
     @Test
@@ -243,7 +245,7 @@ class OnboardingViewModelTest {
         assertNull(viewModel.uiState.value.error)
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
 
-        assertEquals(OnboardingUiState(query = "octo", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "octo", users = listOf(octocat), searchedQuery = "octo"), state)
         assertEquals(listOf("octo", "octo"), searchedNames)
     }
 
@@ -261,7 +263,7 @@ class OnboardingViewModelTest {
         monitor.online.value = true
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
 
-        assertEquals(OnboardingUiState(query = "octo", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "octo", users = listOf(octocat), searchedQuery = "octo"), state)
         assertEquals(listOf("octo", "octo"), searchedNames)
     }
 
@@ -305,7 +307,7 @@ class OnboardingViewModelTest {
         firstCancelled.await()
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
 
-        assertEquals(OnboardingUiState(query = "octo", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "octo", users = listOf(octocat), searchedQuery = "octo"), state)
         assertEquals(listOf("octo", "octo"), searchedNames)
     }
 
@@ -333,8 +335,41 @@ class OnboardingViewModelTest {
         firstCancelled.await()
         val state = viewModel.uiState.first { it.users.isNotEmpty() && !it.isLoading }
 
-        assertEquals(OnboardingUiState(query = "octocat", users = listOf(octocat)), state)
+        assertEquals(loaded.copy(query = "octocat", users = listOf(octocat), searchedQuery = "octocat"), state)
         assertEquals(listOf("octo", "octocat"), searchedNames)
+    }
+
+    @Test
+    fun anEmptyResultRecordsTheSearchedQuery() = runTest {
+        val viewModel = createViewModel { RestResult.Success(emptyList()) }
+
+        viewModel.onQueryChanged(username = "octo")
+        val state = viewModel.uiState.first { it.searchedQuery != null && !it.isLoading }
+
+        assertEquals(loaded.copy(query = "octo", searchedQuery = "octo"), state)
+        assertEquals(OnboardingPane.NO_RESULTS, state.pane)
+    }
+
+    @Test
+    fun clearingTheFieldForgetsTheSearchedQuery() = runTest {
+        val viewModel = createViewModel { RestResult.Success(emptyList()) }
+        viewModel.onQueryChanged(username = "octo")
+        viewModel.uiState.first { it.searchedQuery != null && !it.isLoading }
+
+        viewModel.onQueryChanged(username = "")
+
+        assertNull(viewModel.uiState.value.searchedQuery)
+        assertEquals(OnboardingPane.PROMPT, viewModel.uiState.value.pane)
+    }
+
+    @Test
+    fun theFirstFavoritesEmissionMarksThemLoaded() = runTest {
+        val viewModel = createViewModel()
+
+        val state = viewModel.uiState.first { it.favoritesLoaded }
+
+        assertTrue(state.favorites.isEmpty())
+        assertTrue(state.showsFavoritesEmpty)
     }
 
     @Test

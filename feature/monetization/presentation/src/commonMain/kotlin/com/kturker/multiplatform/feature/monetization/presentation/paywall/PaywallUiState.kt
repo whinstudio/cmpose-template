@@ -4,6 +4,7 @@ import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.core.purchases.PackagePeriod
 import com.kturker.multiplatform.core.purchases.PaywallOffer
 import com.kturker.multiplatform.core.purchases.PaywallPackage
+import com.kturker.multiplatform.core.purchases.PurchaseFailure
 
 internal data class PaywallUiState(
     // False in a release build with a Test Store key: RevenueCat is not configured, nothing can be bought
@@ -13,7 +14,7 @@ internal data class PaywallUiState(
     val selectedPackageId: String? = null,
     // A purchase or restore is running: the buttons wait for its result
     val inProgress: Boolean = false,
-    val error: String? = null,
+    val error: PaywallError? = null,
     // Privacy policy and terms (core/about): the stores want them reachable from a paywall
     val legalLinks: List<LegalLink> = emptyList(),
     // Debug builds only: a link is still missing, so the screen reminds the developer to set both before shipping
@@ -25,6 +26,13 @@ internal data class PaywallUiState(
     val showsRenewalTerms: Boolean get() = packages.any { it.period != PackagePeriod.LIFETIME }
 
     val canPurchase: Boolean get() = selectedPackageId != null && !inProgress
+}
+
+// What went wrong, as a reason: the screen picks the text
+internal sealed interface PaywallError {
+    data object PlansUnavailable : PaywallError
+
+    data class Purchase(val failure: PurchaseFailure) : PaywallError
 }
 
 // The plan selected first: ANNUAL when the offering has one (usually the best value), else the first one

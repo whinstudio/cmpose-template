@@ -38,23 +38,48 @@ internal class LoginViewModel(@Provided private val auth: AuthService, private v
 
     override fun onPasswordChange(password: String) = _state.update { it.copy(password = password) }
 
+    override fun onDisplayNameChange(name: String) = _state.update {
+        val cut = name.take(MAX_DISPLAY_NAME_LENGTH)
+        // A cut through an emoji leaves half a surrogate pair, which is not valid text
+        val whole = if (cut.lastOrNull()?.isHighSurrogate() == true) cut.dropLast(1) else cut
+        it.copy(displayName = whole)
+    }
+
+    override fun startCreatingAccount() =
+        _state.update { it.copy(creatingAccount = true, error = null) }
+
+    override fun backToSignIn() {
+        // The system back gesture also lands here: a sign-up's answer belongs to the form that sent it
+        if (_state.value.busy) return
+        _state.update { it.copy(creatingAccount = false, error = null) }
+    }
+
     override fun signIn() =
         attempt { auth.signInWithEmail(state.value.email, state.value.password) }
 
-    override fun signUp() =
-        attempt { auth.signUpWithEmail(state.value.email, state.value.password) }
+    override fun signUp() {
+        if (!_state.value.canCreateAccount) return
+        val name = _state.value.displayName.trim()
+        // ProfileSync writes the name: this screen closes as soon as the account exists
+        attempt(onSuccess = { profileSync.afterSignUp(name) }) {
+            auth.signUpWithEmail(state.value.email, state.value.password)
+        }
+    }
 
     override fun signInWithGoogle() = attempt { auth.signInWithGoogle() }
 
     override fun signInWithApple() = attempt { auth.signInWithApple() }
 
-    private fun attempt(call: suspend () -> AuthResult) {
+    private fun attempt(
+        onSuccess: () -> Unit = profileSync::afterSignIn,
+        call: suspend () -> AuthResult
+    ) {
         // Without a Firebase config the buttons are off; a call that still arrives does nothing
         if (!_state.value.signInEnabled) return
         _state.update { it.copy(busy = true, error = null, sessionEnded = false) }
         viewModelScope.launch {
             val result = call()
-            if (result == AuthResult.Success) profileSync.afterSignIn()
+            if (result == AuthResult.Success) onSuccess()
             val error = when (result) {
                 is AuthResult.Failure -> result.reason.toUiError()
 

@@ -259,6 +259,15 @@ class HomeViewModelTest {
 
         assertEquals(0, reviewCounter.getInt(key = POSITIVE_EVENTS_KEY, default = 0))
     }
+
+    // Same order as the screen used to check: loading, then error, then the user
+    @Test
+    fun paneFollowsTheHomeScreenOrder() {
+        assertEquals(HomePane.LOADING, HomeUiState(isLoading = true, user = githubUser(login = "a")).pane)
+        assertEquals(HomePane.ERROR, HomeUiState(error = DataError.Network, user = githubUser(login = "a")).pane)
+        assertEquals(HomePane.USER, HomeUiState(user = githubUser(login = "a")).pane)
+        assertEquals(HomePane.NONE, HomeUiState().pane)
+    }
 }
 
 // ReviewPrompter's key, repeated on purpose: the count is kept on the device, so renaming the key

@@ -71,15 +71,15 @@ internal class RevenueCatPurchasesManager(@Provided environment: BuildEnvironmen
     }
 
     override suspend fun purchase(packageId: String): PurchaseResult {
-        if (!isAvailable) return PurchaseResult.Error(PURCHASES_UNAVAILABLE_MESSAGE)
+        if (!isAvailable) return PurchaseResult.Error(PurchaseFailure.PURCHASES_UNAVAILABLE)
         // The paywall may have been opened before RevenueCat answered, or the offering changed: ask once more
         if (packageId !in packagesById) offer()
         val pkg = packagesById[packageId]
-        return if (pkg == null) PurchaseResult.Error(PACKAGE_UNAVAILABLE_MESSAGE) else buy(pkg)
+        return if (pkg == null) PurchaseResult.Error(PurchaseFailure.PACKAGE_UNAVAILABLE) else buy(pkg)
     }
 
     override suspend fun restore(): PurchaseResult {
-        if (!isAvailable) return PurchaseResult.Error(PURCHASES_UNAVAILABLE_MESSAGE)
+        if (!isAvailable) return PurchaseResult.Error(PurchaseFailure.PURCHASES_UNAVAILABLE)
         return try {
             val customerInfo = Purchases.sharedInstance.awaitRestore()
             update(customerInfo)

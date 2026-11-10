@@ -58,6 +58,8 @@ internal class FakeAuthService(
 
     override suspend fun signUpWithEmail(email: String, password: String): AuthResult = AuthResult.Success
 
+    override suspend fun setDisplayName(uid: String, name: String): AuthResult = AuthResult.Success
+
     override suspend fun signInWithGoogle(): AuthResult = AuthResult.Success
 
     override suspend fun signInWithApple(): AuthResult = AuthResult.Success
@@ -72,6 +74,14 @@ internal class FakeAuthService(
     override suspend fun deleteUser(): AuthResult = AuthResult.Success
 
     override suspend fun canDeleteNow(): AuthResult = AuthResult.Success
+
+    override fun usesAppleSignIn(): Boolean = false
+
+    override suspend fun signInWithAppleToRevoke(): AuthResult = AuthResult.Success
+
+    override suspend fun reauthenticateWithAppleToRevoke(): AuthResult = AuthResult.Success
+
+    override suspend fun revokeAppleToken() = Unit
 }
 
 internal class FakeSessionTokens(private val log: MutableList<String>) : SessionTokens {

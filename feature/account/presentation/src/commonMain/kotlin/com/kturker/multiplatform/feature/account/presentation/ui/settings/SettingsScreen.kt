@@ -27,6 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
 import com.kturker.multiplatform.core.multilang.resource.sharedSpacesDeleteWarning
@@ -48,12 +51,18 @@ private fun SettingsScreen(
     actions: SettingsActions
 ) {
     val strings = LocalStringResources.current.account
+    // Leaving would clear the ViewModel mid-deletion: the system back is swallowed until it has an answer
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = state.busy,
+        onBackCompleted = {}
+    )
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(strings.accountTitle) },
                 navigationIcon = {
-                    TextButton(onClick = actions::onBack) {
+                    TextButton(onClick = actions::onBack, enabled = !state.busy) {
                         Text(strings.back)
                     }
                 }

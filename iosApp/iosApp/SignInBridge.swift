@@ -1,5 +1,6 @@
 import AuthenticationServices
 import CryptoKit
+import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
 import Shared
@@ -7,6 +8,7 @@ import UIKit
 
 /// The Swift half of Google and Apple sign-in (core:auth's IosSignInBridge). Each call answers once with
 /// (token, extra, error); error is "cancelled" when the user closed the sheet, "network" when offline.
+/// Apple also answers with its authorization code, the one thing that can revoke the sign-in later.
 final class SignInBridge: NSObject, IosSignInBridge {
 
     /// Whether iOSApp found GoogleService-Info.plist and configured Firebase; false turns sign-in off
@@ -43,15 +45,21 @@ final class SignInBridge: NSObject, IosSignInBridge {
         }
     }
 
-    func apple(completion: @escaping (String?, String?, String?) -> Void) {
+    func apple(completion: @escaping (String?, String?, String?, String?) -> Void) {
         DispatchQueue.main.async {
-            let flow = AppleSignInFlow { [weak self] idToken, rawNonce, error in
+            let flow = AppleSignInFlow { [weak self] idToken, rawNonce, error, authorizationCode in
                 self?.appleFlow = nil
-                completion(idToken, rawNonce, error)
+                completion(idToken, rawNonce, error, authorizationCode)
             }
             // The controller holds its delegate weakly; the flow lives until it answers
             self.appleFlow = flow
             flow.start()
+        }
+    }
+
+    func revokeApple(authorizationCode: String, completion: @escaping (String?) -> Void) {
+        Auth.auth().revokeToken(withAuthorizationCode: authorizationCode) { error in
+            completion(error == nil ? nil : "failed")
         }
     }
 
@@ -84,9 +92,9 @@ private final class AppleSignInFlow: NSObject, ASAuthorizationControllerDelegate
     ASAuthorizationControllerPresentationContextProviding {
 
     private let rawNonce = AppleSignInFlow.randomNonce()
-    private let completion: (String?, String?, String?) -> Void
+    private let completion: (String?, String?, String?, String?) -> Void
 
-    init(completion: @escaping (String?, String?, String?) -> Void) {
+    init(completion: @escaping (String?, String?, String?, String?) -> Void) {
         self.completion = completion
     }
 
@@ -105,15 +113,17 @@ private final class AppleSignInFlow: NSObject, ASAuthorizationControllerDelegate
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
               let tokenData = credential.identityToken,
               let idToken = String(data: tokenData, encoding: .utf8) else {
-            completion(nil, nil, "failed")
+            completion(nil, nil, "failed", nil)
             return
         }
-        completion(idToken, rawNonce, nil)
+        // Only revocation needs the code: signing in without one still succeeds
+        let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+        completion(idToken, rawNonce, nil, authorizationCode)
     }
 
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         let cancelled = (error as? ASAuthorizationError)?.code == .canceled
-        completion(nil, nil, cancelled ? "cancelled" : "failed")
+        completion(nil, nil, cancelled ? "cancelled" : "failed", nil)
     }
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {

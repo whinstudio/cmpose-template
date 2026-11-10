@@ -49,7 +49,7 @@ internal class OnboardingViewModel(
 
     init {
         observeFavorites()
-            .onEach { favorites -> _uiState.update { it.copy(favorites = favorites) } }
+            .onEach { favorites -> _uiState.update { it.copy(favorites = favorites, favoritesLoaded = true) } }
             .launchIn(viewModelScope)
         // Back online after a connection error: load again (an HTTP or parsing error is not retried)
         connectivityMonitor.reconnections()
@@ -93,7 +93,7 @@ internal class OnboardingViewModel(
         searchJob?.cancel()
         if (query.isBlank()) {
             searchJob = null
-            _uiState.update { it.copy(users = emptyList(), isLoading = false, error = null) }
+            _uiState.update { it.copy(users = emptyList(), isLoading = false, error = null, searchedQuery = null) }
             return
         }
         _uiState.update { it.copy(isLoading = false) }
@@ -103,7 +103,7 @@ internal class OnboardingViewModel(
             safeFlowApiCall {
                 searchGithubUsers.invoke(username = query)
             }.onSuccess { users ->
-                _uiState.update { it.copy(users = users) }
+                _uiState.update { it.copy(users = users, searchedQuery = query) }
             }.onError { error ->
                 _uiState.update { it.copy(error = error) }
             }.onLoading { isLoading ->

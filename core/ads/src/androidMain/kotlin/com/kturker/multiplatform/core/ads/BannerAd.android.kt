@@ -21,6 +21,7 @@ private val log = Logger.withTag("Ads")
 // A fixed 320x50 banner, like the iOS one. The AdView loads its ad once and is destroyed when the banner leaves.
 @Composable
 actual fun BannerAd(modifier: Modifier) {
+    if (rememberAdsOffForAutomation()) return
     val activity = requireNotNull(LocalActivity.current) { "Ads need the hosting Activity" }
     val request = remember {
         BannerAdRequest.Builder(AdUnitIds.banner, AdSize.BANNER).build()

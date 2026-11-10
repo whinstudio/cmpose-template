@@ -38,8 +38,20 @@ class FirebaseAvailabilityTest {
 
         assertEquals(unavailable, auth.signInWithEmail("user@example.com", "secret-password"))
         assertEquals(unavailable, auth.signUpWithEmail("user@example.com", "secret-password"))
+        assertEquals(unavailable, auth.setDisplayName("u1", "Ada"))
         assertEquals(unavailable, auth.signInWithGoogle())
         assertEquals(unavailable, auth.signInWithApple())
+    }
+
+    @Test
+    fun withoutAConfigThereIsNoAppleTokenToRevoke() = runTest {
+        val auth = authServiceFor(NotConfigured, firebaseMustNotBeTouched)
+        val unavailable = AuthResult.Failure(AuthFailure.UNAVAILABLE)
+
+        assertFalse(auth.usesAppleSignIn())
+        assertEquals(unavailable, auth.signInWithAppleToRevoke())
+        assertEquals(unavailable, auth.reauthenticateWithAppleToRevoke())
+        auth.revokeAppleToken()
     }
 
     @Test

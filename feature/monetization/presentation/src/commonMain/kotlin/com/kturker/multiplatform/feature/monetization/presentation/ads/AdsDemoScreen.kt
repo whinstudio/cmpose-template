@@ -58,13 +58,14 @@ private fun AdsDemoScreen(
     uiState: AdsDemoUiState,
     actions: AdsDemoActions
 ) {
+    val texts = LocalAdsDemoTexts.current
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ad examples") },
+                title = { Text(texts.title) },
                 navigationIcon = {
                     TextButton(onClick = actions::onNavigateUp) {
-                        Text("Back")
+                        Text(texts.back)
                     }
                 }
             )
@@ -77,24 +78,24 @@ private fun AdsDemoScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (uiState.adFree == true) {
-                Text("Premium: ads are off")
+                Text(texts.premiumAdsOff)
             } else if (uiState.showBanner) {
                 BannerAd()
             }
             Button(onClick = actions::onShowInterstitialClick, enabled = uiState.canShowInterstitial) {
-                Text("Show interstitial")
+                Text(texts.showInterstitial)
             }
             Button(onClick = actions::onWatchRewardedClick, enabled = uiState.canShowAds) {
-                Text("Watch rewarded ad")
+                Text(texts.watchRewarded)
             }
             if (uiState.showPrivacyOptionsButton) {
                 TextButton(onClick = actions::onPrivacyOptionsClick, enabled = !uiState.adBusy) {
-                    Text("Privacy options")
+                    Text(texts.privacyOptions)
                 }
             }
-            Text("Coins: ${uiState.coins}")
-            uiState.message?.let { message -> Text(message) }
-            Text("Test ads (Google test units). Debug builds force the EEA consent form.")
+            Text(texts.coinsLabel(uiState.coins))
+            uiState.message?.let { message -> Text(texts.message(message)) }
+            Text(texts.testAdsNote)
         }
     }
 }

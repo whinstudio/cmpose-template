@@ -96,7 +96,7 @@ class AdsDemoViewModelTest {
 
         assertTrue(viewModel.uiState.value.consentResolved)
         assertFalse(viewModel.uiState.value.canShowAds)
-        assertEquals(CONSENT_FAILED_MESSAGE, viewModel.uiState.value.message)
+        assertEquals(AdsMessage.ConsentFailed, viewModel.uiState.value.message)
         viewModel.commands.test {
             viewModel.onShowInterstitialClick()
             viewModel.onWatchRewardedClick()
@@ -128,7 +128,7 @@ class AdsDemoViewModelTest {
             viewModel.onShowInterstitialClick()
 
             expectNoEvents()
-            assertEquals("Premium: interstitial skipped", viewModel.uiState.value.message)
+            assertEquals(AdsMessage.InterstitialSkipped, viewModel.uiState.value.message)
             assertFalse(viewModel.uiState.value.adBusy)
         }
     }
@@ -289,7 +289,7 @@ class AdsDemoViewModelTest {
         viewModel.runAd { throw CancellationException("screen gone") }
 
         assertFalse(viewModel.uiState.value.adBusy)
-        assertEquals("Ad failed: no fill", viewModel.uiState.value.message)
+        assertEquals(AdsMessage.AdFailed("no fill"), viewModel.uiState.value.message)
         assertEquals(0, viewModel.uiState.value.coins)
     }
 
@@ -325,7 +325,7 @@ class AdsDemoViewModelTest {
 
         viewModel.runAd { AdResult.Failed("no fill") }
 
-        assertEquals("Ad failed: no fill", viewModel.uiState.value.message)
+        assertEquals(AdsMessage.AdFailed("no fill"), viewModel.uiState.value.message)
         assertTrue(viewModel.uiState.value.canShowAds)
     }
 
@@ -409,7 +409,7 @@ class AdsDemoViewModelTest {
         assertFalse(viewModel.uiState.value.adBusy)
         assertFalse(viewModel.uiState.value.consentReady)
         assertFalse(viewModel.uiState.value.showBanner)
-        assertEquals(CONSENT_FAILED_MESSAGE, viewModel.uiState.value.message)
+        assertEquals(AdsMessage.ConsentFailed, viewModel.uiState.value.message)
         assertTrue(viewModel.uiState.value.showPrivacyOptionsButton)
 
         viewModel.onPrivacyOptionsClick()
@@ -430,7 +430,7 @@ class AdsDemoViewModelTest {
 
             expectNoEvents()
         }
-        assertEquals(INTERSTITIAL_PACED_MESSAGE, viewModel.uiState.value.message)
+        assertEquals(AdsMessage.InterstitialPaced, viewModel.uiState.value.message)
         assertFalse(viewModel.uiState.value.adBusy)
     }
 
@@ -448,7 +448,7 @@ class AdsDemoViewModelTest {
 
             expectNoEvents()
         }
-        assertEquals(INTERSTITIAL_PACED_MESSAGE, viewModel.uiState.value.message)
+        assertEquals(AdsMessage.InterstitialPaced, viewModel.uiState.value.message)
     }
 
     @Test
@@ -489,7 +489,7 @@ class AdsDemoViewModelTest {
 
         viewModel.onShowInterstitialClick()
 
-        assertEquals("Premium: interstitial skipped", viewModel.uiState.value.message)
+        assertEquals(AdsMessage.InterstitialSkipped, viewModel.uiState.value.message)
     }
 }
 

@@ -19,9 +19,6 @@ import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
-internal const val CONSENT_FAILED_MESSAGE = "Ads unavailable: consent could not be gathered"
-internal const val INTERSTITIAL_PACED_MESSAGE = "Interstitial paced: not in the first minute, at most one per session"
-
 @KoinViewModel
 internal class AdsDemoViewModel(
     @Provided private val navigationManager: NavigationManager,
@@ -55,7 +52,7 @@ internal class AdsDemoViewModel(
                 consentResolved = true,
                 consentReady = status.canRequestAds,
                 privacyOptionsRequired = status.privacyOptionsRequired,
-                message = if (status.canRequestAds) it.message else CONSENT_FAILED_MESSAGE
+                message = if (status.canRequestAds) it.message else AdsMessage.ConsentFailed
             )
         }
     }
@@ -96,7 +93,7 @@ internal class AdsDemoViewModel(
                 adBusy = false,
                 consentReady = status.canRequestAds,
                 privacyOptionsRequired = status.privacyOptionsRequired,
-                message = if (status.canRequestAds) null else CONSENT_FAILED_MESSAGE
+                message = if (status.canRequestAds) null else AdsMessage.ConsentFailed
             )
         }
     }
@@ -107,10 +104,10 @@ internal class AdsDemoViewModel(
         when {
             !state.canShowInterstitial -> Unit
 
-            state.adFree == true -> _uiState.update { it.copy(message = "Premium: interstitial skipped") }
+            state.adFree == true -> _uiState.update { it.copy(message = AdsMessage.InterstitialSkipped) }
 
             // A real app asks the pacer at a natural break and simply carries on when it says no
-            !interstitialPacer.shouldShow() -> _uiState.update { it.copy(message = INTERSTITIAL_PACED_MESSAGE) }
+            !interstitialPacer.shouldShow() -> _uiState.update { it.copy(message = AdsMessage.InterstitialPaced) }
 
             else -> show(AdCommand.ShowInterstitial)
         }
@@ -127,7 +124,7 @@ internal class AdsDemoViewModel(
         _uiState.update { state ->
             when (result) {
                 is AdResult.Rewarded -> state.copy(adBusy = false, coins = state.coins + result.amount, message = null)
-                is AdResult.Failed -> state.copy(adBusy = false, message = "Ad failed: ${result.reason}")
+                is AdResult.Failed -> state.copy(adBusy = false, message = AdsMessage.AdFailed(result.reason))
                 AdResult.Dismissed -> state.copy(adBusy = false)
             }
         }

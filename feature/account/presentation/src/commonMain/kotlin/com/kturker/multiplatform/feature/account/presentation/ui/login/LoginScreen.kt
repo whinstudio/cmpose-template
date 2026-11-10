@@ -14,12 +14,16 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInCallbacks
@@ -40,26 +44,60 @@ private fun LoginScreen(
     actions: LoginActions
 ) {
     val strings = LocalStringResources.current.account
-    Scaffold(topBar = { TopAppBar(title = { Text(strings.signIn) }) }) { padding ->
+    val title = if (state.creatingAccount) strings.createAccount else strings.signIn
+    // Back on the sign-up form returns to the sign-in form instead of leaving the app
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = state.creatingAccount,
+        onBackCompleted = actions::backToSignIn
+    )
+    Scaffold(topBar = { TopAppBar(title = { Text(title) }) }) { padding ->
+        // The keyboard does not resize the window (edge to edge, and iOS): shrink the column so the buttons
+        // below the text fields can still be scrolled into view while typing
         Column(
-            // The keyboard does not resize the window (edge to edge, and iOS): shrink the column so the
-            // buttons below the text fields can still be scrolled into view while typing
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .consumeWindowInsets(padding)
                 .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            if (state.firebaseUnavailable) {
-                Text(strings.firebaseUnavailable, color = MaterialTheme.colorScheme.error)
+            LoginContent(state = state, actions = actions, modifier = Modifier.weight(1f))
+            // Outside the scroll: the way back stays above the keyboard while the scroll keeps the focused
+            // field in view (the three sign-up fields and both buttons do not fit above it on every phone)
+            if (state.creatingAccount) {
+                TextButton(
+                    onClick = actions::backToSignIn,
+                    enabled = !state.busy,
+                    modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 8.dp)
+                ) {
+                    Text(strings.alreadyHaveAccount)
+                }
             }
-            if (state.sessionEnded) {
-                Text(strings.sessionEnded, color = MaterialTheme.colorScheme.error)
-            }
+        }
+    }
+}
+
+@Composable
+private fun LoginContent(
+    state: LoginUiState,
+    actions: LoginActions,
+    modifier: Modifier
+) {
+    val strings = LocalStringResources.current.account
+    Column(
+        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        if (state.firebaseUnavailable) {
+            Text(strings.firebaseUnavailable, color = MaterialTheme.colorScheme.error)
+        }
+        if (state.sessionEnded) {
+            Text(strings.sessionEnded, color = MaterialTheme.colorScheme.error)
+        }
+        if (state.creatingAccount) {
+            CreateAccountForm(state = state, actions = actions)
+        } else {
             SignInMethods(
                 email = state.email,
                 password = state.password,
@@ -70,10 +108,10 @@ private fun LoginScreen(
                     onSignIn = actions::signIn,
                     onGoogle = actions::signInWithGoogle,
                     onApple = actions::signInWithApple,
-                    onCreateAccount = actions::signUp
+                    onCreateAccount = actions::startCreatingAccount
                 )
             )
-            state.error?.let { Text(uiErrorText(it), color = MaterialTheme.colorScheme.error) }
         }
+        state.error?.let { Text(uiErrorText(it), color = MaterialTheme.colorScheme.error) }
     }
 }

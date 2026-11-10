@@ -16,6 +16,9 @@ data class AccountStrings(
     /** The sign-in screen without a Firebase config (google-services.json / GoogleService-Info.plist). */
     val firebaseUnavailable: String,
     val createAccount: String,
+    /** The create-account form's name field. */
+    val displayName: String,
+    val alreadyHaveAccount: String,
     val continueWithGoogle: String,
     val signInWithApple: String,
     val email: String,
@@ -51,6 +54,8 @@ data class AccountStrings(
             firebaseUnavailable = "Firebase is not configured. Add google-services.json and GoogleService-Info.plist " +
                 "following the steps in the cmpose guide.",
             createAccount = "Create account",
+            displayName = "Your name",
+            alreadyHaveAccount = "I already have an account",
             continueWithGoogle = "Continue with Google",
             signInWithApple = "Sign in with Apple",
             email = "Email",
@@ -84,6 +89,8 @@ data class AccountStrings(
             firebaseUnavailable = "Firebase yapılandırılmadı. cmpose kılavuzundaki adımlarla " +
                 "google-services.json ve GoogleService-Info.plist ekle.",
             createAccount = "Hesap oluştur",
+            displayName = "Adın",
+            alreadyHaveAccount = "Zaten hesabım var",
             continueWithGoogle = "Google ile devam et",
             signInWithApple = "Apple ile giriş yap",
             email = "E-posta",
@@ -115,6 +122,8 @@ data class AccountStrings(
             firebaseUnavailable = "Firebase no está configurado. Añade google-services.json y " +
                 "GoogleService-Info.plist siguiendo los pasos de la guía de cmpose.",
             createAccount = "Crear cuenta",
+            displayName = "Tu nombre",
+            alreadyHaveAccount = "Ya tengo una cuenta",
             continueWithGoogle = "Continuar con Google",
             signInWithApple = "Iniciar sesión con Apple",
             email = "Correo electrónico",
@@ -148,6 +157,8 @@ data class AccountStrings(
             firebaseUnavailable = "Firebase non è configurato. Aggiungi google-services.json e " +
                 "GoogleService-Info.plist seguendo i passaggi della guida di cmpose.",
             createAccount = "Crea account",
+            displayName = "Il tuo nome",
+            alreadyHaveAccount = "Ho già un account",
             continueWithGoogle = "Continua con Google",
             signInWithApple = "Accedi con Apple",
             email = "Email",
@@ -181,6 +192,8 @@ data class AccountStrings(
             firebaseUnavailable = "Firebase n’est pas configuré. Ajoutez google-services.json et " +
                 "GoogleService-Info.plist en suivant les étapes du guide cmpose.",
             createAccount = "Créer un compte",
+            displayName = "Votre nom",
+            alreadyHaveAccount = "J'ai déjà un compte",
             continueWithGoogle = "Continuer avec Google",
             signInWithApple = "Se connecter avec Apple",
             email = "E-mail",

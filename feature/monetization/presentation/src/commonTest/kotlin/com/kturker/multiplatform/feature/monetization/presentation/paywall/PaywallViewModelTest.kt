@@ -10,6 +10,7 @@ import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.purchases.PackagePeriod
 import com.kturker.multiplatform.core.purchases.PaywallOffer
 import com.kturker.multiplatform.core.purchases.PaywallPackage
+import com.kturker.multiplatform.core.purchases.PurchaseFailure
 import com.kturker.multiplatform.core.purchases.PurchaseResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -98,7 +99,7 @@ class PaywallViewModelTest {
         val purchases = FakePurchasesManager(offerResult = null)
         val viewModel = createViewModel(purchases)
 
-        assertEquals(PLANS_UNAVAILABLE_MESSAGE, viewModel.uiState.value.error)
+        assertEquals(PaywallError.PlansUnavailable, viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.loading)
 
         purchases.offerResult = OFFER
@@ -113,7 +114,7 @@ class PaywallViewModelTest {
     fun anEmptyOfferIsAnError() {
         val state = createViewModel(FakePurchasesManager(offerResult = PaywallOffer(emptyList()))).uiState.value
 
-        assertEquals(PLANS_UNAVAILABLE_MESSAGE, state.error)
+        assertEquals(PaywallError.PlansUnavailable, state.error)
         assertNull(state.selectedPackageId)
     }
 
@@ -143,10 +144,10 @@ class PaywallViewModelTest {
 
     @Test
     fun aFailedPurchaseShowsItsMessageUntilTheNextChoice() {
-        val viewModel = createViewModel(FakePurchasesManager(offerResult = OFFER, purchaseResult = PurchaseResult.Error("No connection")))
+        val viewModel = createViewModel(FakePurchasesManager(offerResult = OFFER, purchaseResult = PurchaseResult.Error(PurchaseFailure.NETWORK)))
 
         viewModel.onPurchaseClick()
-        assertEquals("No connection", viewModel.uiState.value.error)
+        assertEquals(PaywallError.Purchase(PurchaseFailure.NETWORK), viewModel.uiState.value.error)
         assertEquals(emptyList<NavigationCommand>(), navigationManager.commands)
 
         viewModel.onPackageSelected(WEEKLY.id)
@@ -197,12 +198,12 @@ class PaywallViewModelTest {
     @Test
     fun aRestoreWithoutPurchasesShowsTheMessageAndStaysOpen() {
         val viewModel = createViewModel(
-            FakePurchasesManager(offerResult = OFFER, restoreResult = PurchaseResult.Error("No purchases to restore"))
+            FakePurchasesManager(offerResult = OFFER, restoreResult = PurchaseResult.Error(PurchaseFailure.NOTHING_TO_RESTORE))
         )
 
         viewModel.onRestoreClick()
 
-        assertEquals("No purchases to restore", viewModel.uiState.value.error)
+        assertEquals(PaywallError.Purchase(PurchaseFailure.NOTHING_TO_RESTORE), viewModel.uiState.value.error)
         assertEquals(emptyList<NavigationCommand>(), navigationManager.commands)
     }
 

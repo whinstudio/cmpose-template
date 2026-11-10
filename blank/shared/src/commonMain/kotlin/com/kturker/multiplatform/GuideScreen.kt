@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -43,6 +44,24 @@ import org.koin.compose.koinInject
 @Serializable
 internal data object GuideDestination : NavigationCommand.Destination
 
+/**
+ * The About dialog's texts. English by default; a multilang project provides them in the app's
+ * language (MainScreen.kt).
+ */
+internal data class AboutTexts(
+    val title: String = "About",
+    val version: (String) -> String = { "Version $it" },
+    val privacyPolicy: String = "Privacy policy",
+    val terms: String = "Terms of use",
+    val licenses: String = "Open source licenses",
+    val close: String = "Close"
+)
+
+internal val LocalAboutTexts = staticCompositionLocalOf { AboutTexts() }
+
+/**
+ * The guide's own texts stay English: they are for you, the developer; the About dialog follows [LocalAboutTexts].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun GuideScreen(
@@ -57,6 +76,7 @@ internal fun GuideScreen(
     val appInfo = koinInject<AppInfo>()
     val navigationManager = koinInject<NavigationManager>()
     var showAbout by remember { mutableStateOf(false) }
+    val aboutTexts = LocalAboutTexts.current
 
     Scaffold(topBar = { TopAppBar(title = { Text("New CMP Project") }) }) { padding ->
         Column(
@@ -106,7 +126,7 @@ internal fun GuideScreen(
             appInfo = appInfo,
             onLicensesClick = {
                 showAbout = false
-                navigationManager.navigate(LicensesDestination(title = "Open source licenses"))
+                navigationManager.navigate(LicensesDestination(title = aboutTexts.licenses))
             },
             onDismiss = { showAbout = false }
         )
@@ -120,27 +140,28 @@ private fun AboutDialog(
     onDismiss: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
+    val texts = LocalAboutTexts.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("About") },
+        title = { Text(texts.title) },
         text = {
             Column {
-                Text("Version ${appInfo.version.displayText}")
+                Text(texts.version(appInfo.version.displayText))
                 appInfo.legalLinks.forEach { link ->
                     TextButton(onClick = { uriHandler.openUri(link.url) }) {
-                        Text(if (link.kind == LegalLinkKind.PrivacyPolicy) "Privacy policy" else "Terms of use")
+                        Text(if (link.kind == LegalLinkKind.PrivacyPolicy) texts.privacyPolicy else texts.terms)
                     }
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onLicensesClick) {
-                Text("Open source licenses")
+                Text(texts.licenses)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(texts.close)
             }
         }
     )

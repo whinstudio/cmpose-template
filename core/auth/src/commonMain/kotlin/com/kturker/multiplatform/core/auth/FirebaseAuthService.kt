@@ -27,6 +27,7 @@ internal class FirebaseAuthService(
 ) : AuthService {
 
     private val notice = SessionNotice()
+    private val revocation = AppleRevocation(social::revokeApple)
 
     override val state: StateFlow<AuthState> = auth.authStateChanged
         .map { user -> if (user == null) AuthState.SignedOut else AuthState.SignedIn(user.uid, user.email) }
@@ -58,6 +59,14 @@ internal class FirebaseAuthService(
         auth.createUserWithEmailAndPassword(email, password)
     }
 
+    override suspend fun setDisplayName(
+        uid: String,
+        name: String
+    ): AuthResult {
+        val user = auth.currentUser?.takeIf { it.uid == uid } ?: return AuthResult.Failure(AuthFailure.UNKNOWN)
+        return firebaseCall { user.updateProfile(displayName = name) }
+    }
+
     // The platform half may throw more than Firebase's types (Credential Manager, Firebase's Apple web flow):
     // inside firebaseResult every such exception becomes a failure instead of a crash
     override suspend fun signInWithGoogle(): AuthResult =
@@ -68,6 +77,7 @@ internal class FirebaseAuthService(
 
     override suspend fun signOut(reason: SignOutReason) {
         if (reason == SignOutReason.SESSION_ENDED) notice.post()
+        revocation.drop()
         auth.signOut()
     }
 
@@ -89,19 +99,42 @@ internal class FirebaseAuthService(
         }
     }
 
+    override fun usesAppleSignIn(): Boolean =
+        auth.currentUser?.providerData?.any { it.providerId == APPLE_PROVIDER } == true
+
+    // Another Apple ID signs in as another user, whose token would revoke an account that is not being deleted
+    override suspend fun signInWithAppleToRevoke(): AuthResult {
+        val before = auth.currentUser?.uid
+        return revocation.signInHoldingToken(
+            platformToken = social::apple,
+            holdIf = { auth.currentUser?.uid == before },
+            signIn = ::signInWith
+        )
+    }
+
+    override suspend fun reauthenticateWithAppleToRevoke(): AuthResult {
+        val user = auth.currentUser ?: return AuthResult.NeedsRecentLogin
+        return revocation.signInHoldingToken(social::appleForCurrentUser) { token ->
+            if (token is SocialToken.Apple) {
+                firebaseCall(::reauthResultOf) { user.reauthenticate(appleCredential(token)) }
+            } else {
+                signInWith(token)
+            }
+        }
+    }
+
+    override suspend fun revokeAppleToken() = revocation.revokeHeld()
+
     private suspend fun signInWith(token: SocialToken): AuthResult = when (token) {
         is SocialToken.Google -> credentialSignIn(GoogleAuthProvider.credential(token.idToken, token.accessToken))
-
-        is SocialToken.Apple -> credentialSignIn(
-            OAuthProvider.credential(providerId = APPLE_PROVIDER, idToken = token.idToken, rawNonce = token.rawNonce)
-        )
-
-        SocialToken.SignedInByPlatform -> AuthResult.Success
-
+        is SocialToken.Apple -> credentialSignIn(appleCredential(token))
+        is SocialToken.SignedInByPlatform -> AuthResult.Success
         SocialToken.Cancelled -> AuthResult.Cancelled
-
         is SocialToken.Failed -> AuthResult.Failure(token.reason)
     }
+
+    private fun appleCredential(token: SocialToken.Apple): AuthCredential =
+        OAuthProvider.credential(providerId = APPLE_PROVIDER, idToken = token.idToken, rawNonce = token.rawNonce)
 
     private suspend fun credentialSignIn(credential: AuthCredential): AuthResult =
         firebaseCall(::socialResultOf) {

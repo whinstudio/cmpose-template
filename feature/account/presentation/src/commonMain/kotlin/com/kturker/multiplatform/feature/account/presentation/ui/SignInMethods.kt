@@ -29,24 +29,12 @@ internal fun SignInMethods(
 ) {
     val strings = LocalStringResources.current.account
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = email,
-            onValueChange = callbacks.onEmailChange,
-            label = { Text(strings.email) },
-            singleLine = true,
+        EmailPasswordFields(
+            email = email,
+            password = password,
             enabled = enabled,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = callbacks.onPasswordChange,
-            label = { Text(strings.password) },
-            singleLine = true,
-            enabled = enabled,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            onEmailChange = callbacks.onEmailChange,
+            onPasswordChange = callbacks.onPasswordChange
         )
         Button(onClick = callbacks.onSignIn, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
             Text(strings.signIn)
@@ -71,4 +59,35 @@ internal fun SignInMethods(
             Text(strings.signInWithApple)
         }
     }
+}
+
+/** The email and password fields, shared by the sign-in methods and the create-account form. */
+@Composable
+internal fun EmailPasswordFields(
+    email: String,
+    password: String,
+    enabled: Boolean,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit
+) {
+    val strings = LocalStringResources.current.account
+    OutlinedTextField(
+        value = email,
+        onValueChange = onEmailChange,
+        label = { Text(strings.email) },
+        singleLine = true,
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        modifier = Modifier.fillMaxWidth()
+    )
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        label = { Text(strings.password) },
+        singleLine = true,
+        enabled = enabled,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        modifier = Modifier.fillMaxWidth()
+    )
 }

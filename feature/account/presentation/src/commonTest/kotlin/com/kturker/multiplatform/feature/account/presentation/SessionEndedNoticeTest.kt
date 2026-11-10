@@ -40,7 +40,7 @@ class SessionEndedNoticeTest {
         Dispatchers.resetMain()
     }
 
-    private fun settings() = SettingsViewModel(repository, auth, tokens, RecordingNavigationManager())
+    private fun settings() = SettingsViewModel(repository, auth, tokens, RecordingNavigationManager(), FakePendingDisplayName())
 
     @Test
     fun aSignOutOnUnauthorizedShowsTheNoticeOnce() = runTest {

@@ -26,7 +26,15 @@ import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.review.ReviewRequestEffect
 import com.kturker.multiplatform.core.update.AppUpdateEffect
 import com.kturker.multiplatform.core.update.UpdateTexts
+// cmpose:ads
+import com.kturker.multiplatform.feature.monetization.presentation.ads.AdsDemoTexts
+import com.kturker.multiplatform.feature.monetization.presentation.ads.LocalAdsDemoTexts
+// /cmpose:ads
 import com.kturker.multiplatform.feature.monetization.presentation.paywall.FirstLaunchPaywall
+// cmpose:purchases
+import com.kturker.multiplatform.feature.monetization.presentation.paywall.LocalPaywallTexts
+import com.kturker.multiplatform.feature.monetization.presentation.paywall.PaywallTexts
+// /cmpose:purchases
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 
@@ -53,6 +61,8 @@ fun MainScreen(
 
     // The app's strings (LocalStringResources.current.<key>): the device language, or the saved choice
     val resources by languageManager.currentResources.collectAsState()
+    // Remembered: a new lambda in AboutTexts would make the static local recompose everything below it
+    val aboutTexts = remember(resources) { resources.aboutTexts() }
 
     LaunchedEffect(key1 = Unit) {
         languageManager.setSystemLanguage()
@@ -66,11 +76,20 @@ fun MainScreen(
     val start: NavigationCommand.Destination = rememberSessionStart(GuideDestination, navigationManager) ?: return
 
     AppTheme {
-        CompositionLocalProvider(LocalStringResources provides resources) {
+        CompositionLocalProvider(
+            // cmpose:purchases
+            LocalPaywallTexts provides resources.paywallTexts(),
+            // /cmpose:purchases
+            // cmpose:ads
+            LocalAdsDemoTexts provides resources.adsDemoTexts(),
+            // /cmpose:ads
+            LocalStringResources provides resources,
+            LocalAboutTexts provides aboutTexts
+        ) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
-                    OfflineBanner(text = "No connection")
+                    OfflineBanner(text = LocalStringResources.current.offlineBanner)
                     // cmpose:backend
                     // Debug builds: the local server does not answer (LocalServerBanner.kt); hidden while offline
                     LocalServerBanner()
@@ -126,3 +145,69 @@ private fun StringResourcesUiModel.updateTexts() = UpdateTexts(
     downloaded = updateDownloaded,
     restart = updateRestart
 )
+
+private fun StringResourcesUiModel.aboutTexts() = AboutTexts(
+    title = aboutTitle,
+    version = { "$settingsVersion $it" },
+    privacyPolicy = settingsPrivacyPolicy,
+    terms = settingsTerms,
+    licenses = settingsLicenses,
+    close = close
+)
+// cmpose:purchases
+
+private fun StringResourcesUiModel.paywallTexts() = PaywallTexts(
+    title = settingsPremium,
+    notNow = paywallNotNow,
+    retry = retry,
+    headline = paywallHeadline,
+    benefitRemoveAds = paywallBenefitRemoveAds,
+    benefitOne = paywallBenefitOne,
+    benefitTwo = paywallBenefitTwo,
+    continueLabel = paywallContinue,
+    restore = paywallRestore,
+    purchasesDisabled = paywallPurchasesDisabled,
+    renewalTerms = paywallRenewalTerms,
+    missingLegalLinks = paywallMissingLegalLinks,
+    privacyPolicy = settingsPrivacyPolicy,
+    terms = settingsTerms,
+    periodWeekly = paywallPeriodWeekly,
+    periodMonthly = paywallPeriodMonthly,
+    periodAnnual = paywallPeriodAnnual,
+    periodLifetime = paywallPeriodLifetime,
+    periodOther = paywallPeriodOther,
+    priceWeekly = paywallPriceWeekly,
+    priceMonthly = paywallPriceMonthly,
+    priceAnnual = paywallPriceAnnual,
+    priceLifetime = paywallPriceLifetime,
+    pricePerMonth = paywallPricePerMonth,
+    save = paywallSave,
+    freeTrial = paywallFreeTrial,
+    plansUnavailable = paywallPlansUnavailable,
+    failureUnavailable = purchaseErrorUnavailable,
+    failurePackageUnavailable = purchaseErrorPackageUnavailable,
+    failureNothingToRestore = purchaseErrorNothingToRestore,
+    failureNetwork = purchaseErrorNetwork,
+    failurePending = purchaseErrorPending,
+    failureStore = purchaseErrorStore,
+    failureNotAllowed = purchaseErrorNotAllowed,
+    failureFailed = purchaseErrorFailed
+)
+// /cmpose:purchases
+// cmpose:ads
+
+private fun StringResourcesUiModel.adsDemoTexts() = AdsDemoTexts(
+    title = settingsAdExamples,
+    back = back,
+    premiumAdsOff = adsPremiumOff,
+    showInterstitial = adsShowInterstitial,
+    watchRewarded = adsWatchRewarded,
+    privacyOptions = adsPrivacyOptions,
+    coins = adsCoins,
+    testAdsNote = adsTestNote,
+    consentFailed = adsConsentFailed,
+    interstitialPaced = adsInterstitialPaced,
+    interstitialSkipped = adsInterstitialSkipped,
+    adFailed = adsFailed
+)
+// /cmpose:ads

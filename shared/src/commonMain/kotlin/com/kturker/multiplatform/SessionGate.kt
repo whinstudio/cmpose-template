@@ -16,7 +16,7 @@ import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.feature.account.contract.LoginDestination
 import com.kturker.multiplatform.feature.sharing.contract.InviteDestination
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
-import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
+import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteTokenStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -67,7 +67,7 @@ internal class SessionGate(
     private val home: NavigationCommand.Destination,
     private val tokens: SessionTokens,
     private val selectedSpace: SelectedSpace,
-    private val pendingInvites: PendingInviteStore,
+    private val pendingInvites: PendingInviteTokenStore,
     private val reconnections: Flow<Unit>,
     private val scope: CoroutineScope
 ) {
@@ -133,7 +133,7 @@ internal fun rememberSessionStart(
     auth: AuthService = koinInject(),
     tokens: SessionTokens = koinInject(),
     selectedSpace: SelectedSpace = koinInject(),
-    pendingInvites: PendingInviteStore = koinInject(),
+    pendingInvites: PendingInviteTokenStore = koinInject(),
     connectivity: ConnectivityMonitor = koinInject()
 ): NavigationCommand.Destination? {
     val scope = rememberCoroutineScope()

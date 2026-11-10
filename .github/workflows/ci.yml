@@ -41,8 +41,9 @@ jobs:
         run: ./gradlew :shared:compileKotlinIosSimulatorArm64 iosSimulatorArm64Test
 # cmpose:backend
 
-  # server/ is generated from the cmpose backend template (an included build); the template repository has none.
-  # hashFiles needs the checkout, so the condition sits on the steps after it, not on the job.
+  # Builds and tests the backend in server/ with its own Gradle wrapper: server/ is a standalone build, so the app's
+  # Android and iOS modules are not configured here. hashFiles needs the checkout, so the condition sits on the steps
+  # after it, not on the job.
   server:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -57,5 +58,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
       - name: Server build and tests
         if: hashFiles('server/settings.gradle.kts') != ''
-        run: ./gradlew :server:build
+        working-directory: server
+        run: ./gradlew build
 # /cmpose:backend

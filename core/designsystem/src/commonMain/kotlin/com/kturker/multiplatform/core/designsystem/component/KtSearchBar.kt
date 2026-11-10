@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kturker.multiplatform.core.designsystem.icon.IcSearch
 import com.kturker.multiplatform.core.designsystem.theme.LocalColorsPalette
+import com.kturker.multiplatform.core.designsystem.theme.Spacing
 
 @Composable
 fun KtSearchBar(
@@ -37,7 +38,7 @@ fun KtSearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(color.backgroundColor)
-            .padding(all = 8.dp)
+            .padding(all = Spacing.sm)
     ) {
         OutlinedTextField(
             modifier = modifier.fillMaxWidth(),
@@ -62,7 +63,7 @@ fun KtSearchBar(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = color.textFieldFocusedBorder,
                 unfocusedBorderColor = color.textFieldUnFocusedBorder,
-                disabledBorderColor = color.textFieldFocusedBorder,
+                disabledBorderColor = color.textFieldUnFocusedBorder,
                 focusedTextColor = color.textFieldTextColor,
                 unfocusedTextColor = color.textFieldTextColor,
                 disabledTextColor = color.textFieldTextColor,
@@ -79,7 +80,7 @@ fun KtSearchBar(
                     imageVector = IcSearch,
                     // Decorative: the field's placeholder says what it is for
                     contentDescription = null,
-                    tint = color.tintGrey
+                    tint = color.tintSecondary
                 )
             }
         )

@@ -20,6 +20,11 @@ internal data class MembersUiState(
     val removing: Member? = null,
     /** The space's invite links not yet used, revoked or run out; only the owner ([canShare]) has them. */
     val invites: List<PendingInvite> = emptyList(),
+    /**
+     * Counts the successful invite loads: the screen counts the days left from the latest one, even when it
+     * returned the same list as before.
+     */
+    val invitesLoad: Int = 0,
     /** The invite link whose revocation waits for a confirmation. */
     val revoking: PendingInvite? = null,
     val error: SharingError? = null

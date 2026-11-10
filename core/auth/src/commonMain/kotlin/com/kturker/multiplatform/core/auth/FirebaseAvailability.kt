@@ -46,6 +46,11 @@ internal class UnavailableAuthService : AuthService {
         password: String
     ): AuthResult = UNAVAILABLE
 
+    override suspend fun setDisplayName(
+        uid: String,
+        name: String
+    ): AuthResult = UNAVAILABLE
+
     override suspend fun signInWithGoogle(): AuthResult = UNAVAILABLE
 
     override suspend fun signInWithApple(): AuthResult = UNAVAILABLE
@@ -57,6 +62,14 @@ internal class UnavailableAuthService : AuthService {
     override suspend fun deleteUser(): AuthResult = UNAVAILABLE
 
     override suspend fun canDeleteNow(): AuthResult = UNAVAILABLE
+
+    override fun usesAppleSignIn(): Boolean = false
+
+    override suspend fun signInWithAppleToRevoke(): AuthResult = UNAVAILABLE
+
+    override suspend fun reauthenticateWithAppleToRevoke(): AuthResult = UNAVAILABLE
+
+    override suspend fun revokeAppleToken() = Unit
 
     private companion object {
         val UNAVAILABLE = AuthResult.Failure(AuthFailure.UNAVAILABLE)

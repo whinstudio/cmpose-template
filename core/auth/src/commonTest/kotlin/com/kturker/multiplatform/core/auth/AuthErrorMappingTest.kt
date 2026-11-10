@@ -28,6 +28,20 @@ class AuthErrorMappingTest {
         assertEquals(AuthResult.Failure(AuthFailure.EMAIL_IN_USE), socialResultOf("17012"))
     }
 
+    // Firebase refuses another Apple ID and keeps the current user: for the person that is backing out, not an error
+    @Test
+    fun anotherAccountAtReauthenticationIsACancel() {
+        assertEquals(AuthResult.Cancelled, reauthResultOf("ERROR_USER_MISMATCH"))
+        assertEquals(AuthResult.Cancelled, reauthResultOf("17024"))
+    }
+
+    @Test
+    fun otherReauthenticationErrorsMapLikeASocialSignIn() {
+        assertEquals(AuthResult.Failure(AuthFailure.PROVIDER_REJECTED), reauthResultOf("ERROR_INVALID_CREDENTIAL"))
+        assertEquals(AuthResult.Failure(AuthFailure.NETWORK), reauthResultOf("17020"))
+        assertEquals(AuthResult.NeedsRecentLogin, reauthResultOf("17014"))
+    }
+
     @Test
     fun unknownCodesAreUnknown() {
         assertEquals(AuthFailure.UNKNOWN, authFailureOf("SOMETHING_NEW"))

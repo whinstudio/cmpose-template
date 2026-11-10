@@ -17,7 +17,10 @@ internal val LATE_REWARD_GRACE = 1.seconds
 @Composable
 actual fun rememberAdsController(): AdsController {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    return remember(lifecycle) { LoggingAdsController(IosAdsController(lifecycle)) }
+    val adsOff = rememberAdsOffForAutomation()
+    return remember(lifecycle, adsOff) {
+        if (adsOff) NoAdsController else LoggingAdsController(IosAdsController(lifecycle))
+    }
 }
 
 // Each call hands the Swift bridge callbacks that resume the waiting coroutine. A cancelled call (the

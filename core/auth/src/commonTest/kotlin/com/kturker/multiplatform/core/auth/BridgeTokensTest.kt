@@ -19,6 +19,11 @@ class BridgeTokensTest {
     }
 
     @Test
+    fun anAppleTokenCarriesItsAuthorizationCode() {
+        assertEquals(SocialToken.Apple("id", "nonce", "code"), appleTokenOf("id", "nonce", null, "code"))
+    }
+
+    @Test
     fun cancelledIsCancelledOnBothProviders() {
         assertEquals(SocialToken.Cancelled, googleTokenOf(null, null, "cancelled"))
         assertEquals(SocialToken.Cancelled, appleTokenOf(null, null, "cancelled"))

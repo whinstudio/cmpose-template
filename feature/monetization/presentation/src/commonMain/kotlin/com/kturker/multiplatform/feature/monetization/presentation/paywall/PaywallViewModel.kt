@@ -16,8 +16,6 @@ import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
-internal const val PLANS_UNAVAILABLE_MESSAGE = "Plans could not be loaded. Check your connection and try again."
-
 // The paywall's behaviour on PurchasesManager alone (no RevenueCat type): load the offer, buy or restore, close.
 // Your app redraws PaywallScreen in its own design and keeps this ViewModel.
 @KoinViewModel
@@ -72,7 +70,7 @@ internal class PaywallViewModel(
                         loading = false,
                         offer = null,
                         selectedPackageId = null,
-                        error = PLANS_UNAVAILABLE_MESSAGE
+                        error = PaywallError.PlansUnavailable
                     )
                 } else {
                     state.copy(
@@ -91,7 +89,8 @@ internal class PaywallViewModel(
         _uiState.update { it.copy(inProgress = true, error = null) }
         viewModelScope.launch {
             val result = call()
-            _uiState.update { it.copy(inProgress = false, error = (result as? PurchaseResult.Error)?.message) }
+            val error = (result as? PurchaseResult.Error)?.let { PaywallError.Purchase(it.failure) }
+            _uiState.update { it.copy(inProgress = false, error = error) }
             if (result == PurchaseResult.Success) close()
         }
     }

@@ -24,11 +24,11 @@ class RevenueCatPurchasesManagerTest {
 
     @Test
     fun withoutRevenueCatAPurchaseIsAnError() = runTest {
-        assertEquals(PurchaseResult.Error(PURCHASES_UNAVAILABLE_MESSAGE), manager.purchase(packageId = "annual"))
+        assertEquals(PurchaseResult.Error(PurchaseFailure.PURCHASES_UNAVAILABLE), manager.purchase(packageId = "annual"))
     }
 
     @Test
     fun withoutRevenueCatARestoreIsAnError() = runTest {
-        assertEquals(PurchaseResult.Error(PURCHASES_UNAVAILABLE_MESSAGE), manager.restore())
+        assertEquals(PurchaseResult.Error(PurchaseFailure.PURCHASES_UNAVAILABLE), manager.restore())
     }
 }

@@ -38,7 +38,10 @@ private val mobileAdsStarted = AtomicBoolean(false)
 actual fun rememberAdsController(): AdsController {
     val activity = requireNotNull(LocalActivity.current) { "Ads need the hosting Activity" }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    return remember(activity, lifecycle) { LoggingAdsController(AndroidAdsController(activity, lifecycle)) }
+    val adsOff = rememberAdsOffForAutomation()
+    return remember(activity, lifecycle, adsOff) {
+        if (adsOff) NoAdsController else LoggingAdsController(AndroidAdsController(activity, lifecycle))
+    }
 }
 
 // Every callback checks that the caller still waits: a screen that is gone (left or recreated) cancels

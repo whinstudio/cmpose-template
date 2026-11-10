@@ -8,7 +8,7 @@ import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.feature.account.contract.LoginDestination
 import com.kturker.multiplatform.feature.sharing.contract.InviteDestination
 import com.kturker.multiplatform.feature.sharing.contract.SelectedSpace
-import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteStore
+import com.kturker.multiplatform.feature.sharing.presentation.data.PendingInviteTokenStore
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -297,7 +297,7 @@ private class RecordingSelectedSpace(private val log: MutableList<String>) : Sel
     }
 }
 
-private class MemoryPendingInvites(private val log: MutableList<String>) : PendingInviteStore {
+private class MemoryPendingInvites(private val log: MutableList<String>) : PendingInviteTokenStore {
     var token: String? = null
 
     override suspend fun put(token: String) {

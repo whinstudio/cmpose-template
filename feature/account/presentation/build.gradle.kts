@@ -13,7 +13,11 @@ kotlin {
             implementation(projects.core.auth)
             // The backend's HttpClient (BACKEND_CLIENT), BaseRepository, forgetToken()
             implementation(projects.core.network)
+            // DataStore: a sign-up's name waiting for Firebase
+            implementation(projects.core.database)
             implementation(libs.ktor.client.core)
+            // NavigationBackHandler: back on the sign-up form returns to the sign-in form
+            implementation(libs.navigationevent.compose)
         }
         commonTest.dependencies {
             implementation(projects.core.network)

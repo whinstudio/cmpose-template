@@ -17,6 +17,11 @@ internal class AndroidSocialSignIn(
 
     override suspend fun apple(): SocialToken = withActivity { apple.signIn(it) }
 
+    override suspend fun appleForCurrentUser(): SocialToken =
+        withActivity { apple.reauthenticate(it) }
+
+    override suspend fun revokeApple(token: String): Boolean = apple.revoke(token)
+
     private suspend fun withActivity(block: suspend (Activity) -> SocialToken): SocialToken {
         val activity = currentActivity() ?: run {
             Logger.withTag("Auth").e { "No resumed Activity: CurrentActivity.install was not called" }
