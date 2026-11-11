@@ -2,6 +2,7 @@ package com.kturker.multiplatform.feature.account.presentation
 
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.viewModelScope
+import com.kturker.multiplatform.core.about.legalLinks
 import com.kturker.multiplatform.core.api.ErrorCodes
 import com.kturker.multiplatform.core.api.Role
 import com.kturker.multiplatform.core.api.Space
@@ -19,8 +20,8 @@ import com.kturker.multiplatform.feature.account.presentation.ui.settings.Settin
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -45,6 +46,7 @@ class SettingsViewModelTest {
     private val navigation = RecordingNavigationManager()
     private val preferences = InMemoryPreferences()
     private val pendingName = DataStorePendingDisplayName(preferences)
+    private val appInfo = FakeAppInfo()
 
     @BeforeTest
     fun setUp() {
@@ -56,7 +58,7 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = SettingsViewModel(repository, auth, tokens, navigation, pendingName)
+    private fun viewModel() = SettingsViewModel(repository, auth, tokens, navigation, pendingName, appInfo)
 
     private fun TestScope.confirmedDeletion() = viewModel().apply {
         requestDelete()
@@ -78,6 +80,23 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertEquals("me@example.com", viewModel.state.value.email)
+    }
+
+    // The stores ask for the privacy policy next to the account deletion
+    @Test
+    fun showsTheLegalLinksThatAreSet() = runTest {
+        val appInfo = FakeAppInfo(listOf(PRIVACY_LINK, TERMS_LINK))
+        val viewModel = SettingsViewModel(repository, auth, tokens, navigation, pendingName, appInfo)
+
+        assertEquals(listOf(PRIVACY_LINK, TERMS_LINK), viewModel.state.value.legalLinks)
+    }
+
+    @Test
+    fun hidesTheLegalLinksWhileTheUrlsAreEmpty() = runTest {
+        val appInfo = FakeAppInfo(legalLinks(privacyPolicyUrl = "", termsUrl = ""))
+        val viewModel = SettingsViewModel(repository, auth, tokens, navigation, pendingName, appInfo)
+
+        assertEquals(emptyList(), viewModel.state.value.legalLinks)
     }
 
     @Test

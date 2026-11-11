@@ -7,6 +7,7 @@ import co.touchlab.kermit.TestLogWriter
 import co.touchlab.kermit.platformLogWriter
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -47,5 +48,29 @@ class AndroidInsightsTest {
     @Test
     fun withoutKoinInsightsAreOff() {
         assertSame(NoOpInsights, platformInsights())
+    }
+
+    // Without Firebase both switches go nowhere, and do not throw
+    @Test
+    fun withoutFirebaseTheSwitchesDoNothing() {
+        val insights = platformInsights()
+
+        insights.setAnalyticsEnabled(true)
+        insights.setCrashReportsEnabled(false)
+
+        assertSame(NoOpInsights, insights)
+    }
+
+    // Firebase starts before the app does: Analytics must already be off in the manifest, until the user agrees
+    @Test
+    fun theManifestStartsWithAnalyticsOff() {
+        val manifest = File("src/androidMain/AndroidManifest.xml").readText()
+
+        assertTrue(
+            Regex(
+                """<meta-data\s+android:name="firebase_analytics_collection_enabled"\s+android:value="false"\s*/>"""
+            ).containsMatchIn(manifest),
+            manifest
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.account.presentation
 
+import com.kturker.multiplatform.core.about.legalLinks
 import com.kturker.multiplatform.core.auth.AuthFailure
 import com.kturker.multiplatform.core.auth.AuthResult
 import com.kturker.multiplatform.core.auth.AuthState
@@ -25,6 +26,7 @@ class LoginViewModelTest {
 
     private val auth = FakeAuthService(initial = AuthState.SignedOut)
     private val profileSync = FakeProfileSync()
+    private val appInfo = FakeAppInfo()
 
     @BeforeTest
     fun setUp() {
@@ -36,7 +38,7 @@ class LoginViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = LoginViewModel(auth, profileSync).apply {
+    private fun viewModel() = LoginViewModel(auth, profileSync, appInfo).apply {
         onEmailChange("me@example.com")
         onPasswordChange("secret1")
         onDisplayNameChange("Ada")
@@ -131,7 +133,7 @@ class LoginViewModelTest {
     @Test
     fun unavailableFirebaseDisablesSignIn() = runTest {
         val auth = FakeAuthService(initial = AuthState.Unavailable)
-        val viewModel = LoginViewModel(auth, profileSync)
+        val viewModel = LoginViewModel(auth, profileSync, appInfo)
 
         assertTrue(viewModel.state.value.firebaseUnavailable)
         assertFalse(viewModel.state.value.signInEnabled)
@@ -252,5 +254,20 @@ class LoginViewModelTest {
         viewModel.backToSignIn()
         assertFalse(viewModel.state.value.creatingAccount)
         assertEquals("Ada", viewModel.state.value.displayName)
+    }
+
+    // The stores ask for the privacy policy where the account is made: below the sign-in form
+    @Test
+    fun showsTheLegalLinksThatAreSet() = runTest {
+        val viewModel = LoginViewModel(auth, profileSync, FakeAppInfo(listOf(PRIVACY_LINK, TERMS_LINK)))
+
+        assertEquals(listOf(PRIVACY_LINK, TERMS_LINK), viewModel.state.value.legalLinks)
+    }
+
+    @Test
+    fun hidesTheLegalLinksWhileTheUrlsAreEmpty() = runTest {
+        val appInfo = FakeAppInfo(legalLinks(privacyPolicyUrl = "", termsUrl = ""))
+
+        assertEquals(emptyList(), LoginViewModel(auth, profileSync, appInfo).state.value.legalLinks)
     }
 }

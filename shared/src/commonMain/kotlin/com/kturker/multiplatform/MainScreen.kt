@@ -18,6 +18,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.image.ImageLoaderSetup
+import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentDialog
+import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentTexts
+import com.kturker.multiplatform.core.insights.consent.ui.LocalInsightsConsentTexts
 import com.kturker.multiplatform.core.multilang.language.LanguageManager
 import com.kturker.multiplatform.core.multilang.resource.StringResourcesUiModel
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
@@ -69,7 +72,8 @@ fun MainScreen(
         CompositionLocalProvider(
             LocalStringResources provides resource,
             LocalPaywallTexts provides resource.paywallTexts(),
-            LocalAdsDemoTexts provides resource.adsDemoTexts()
+            LocalAdsDemoTexts provides resource.adsDemoTexts(),
+            LocalInsightsConsentTexts provides resource.insightsConsentTexts()
         ) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -98,6 +102,8 @@ fun MainScreen(
 
             // Update available / required (core/update): at most one check a day
             AppUpdateEffect(texts = LocalStringResources.current.updateTexts())
+            // Analytics stays off until the user agrees: asked at launch until answered (core/insights)
+            InsightsConsentDialog()
         }
     }
 
@@ -175,4 +181,16 @@ private fun StringResourcesUiModel.adsDemoTexts() = AdsDemoTexts(
     interstitialPaced = adsInterstitialPaced,
     interstitialSkipped = adsInterstitialSkipped,
     adFailed = adsFailed
+)
+
+private fun StringResourcesUiModel.insightsConsentTexts() = InsightsConsentTexts(
+    promptTitle = insightsPromptTitle,
+    promptMessage = insightsPromptMessage,
+    allow = insightsAllow,
+    deny = insightsDeny,
+    settingsTitle = insightsSettingsTitle,
+    analytics = insightsAnalytics,
+    analyticsDescription = insightsAnalyticsDescription,
+    crashReports = insightsCrashReports,
+    crashReportsDescription = insightsCrashReportsDescription
 )

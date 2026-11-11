@@ -32,8 +32,12 @@ final class InsightsBridge: NSObject, IosInsightsBridge {
         Crashlytics.crashlytics().log(message)
     }
 
-    func setCollectionEnabled(enabled: Bool) {
-        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(enabled)
+    // Info.plist starts Analytics off (FIREBASE_ANALYTICS_COLLECTION_ENABLED): Kotlin turns it on once the user agrees
+    func setAnalyticsEnabled(enabled: Bool) {
         Analytics.setAnalyticsCollectionEnabled(enabled)
+    }
+
+    func setCrashReportsEnabled(enabled: Bool) {
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(enabled)
     }
 }

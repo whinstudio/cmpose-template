@@ -3,6 +3,10 @@ package com.kturker.multiplatform.feature.account.presentation
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import com.kturker.multiplatform.core.about.AppInfo
+import com.kturker.multiplatform.core.about.AppVersion
+import com.kturker.multiplatform.core.about.LegalLink
+import com.kturker.multiplatform.core.about.LegalLinkKind
 import com.kturker.multiplatform.core.api.Profile
 import com.kturker.multiplatform.core.api.Space
 import com.kturker.multiplatform.core.auth.AuthFailure
@@ -268,3 +272,11 @@ internal class InMemoryPreferences : DataStore<Preferences> {
         return state.value
     }
 }
+
+/** The app's version and legal links, as the account screens read them; no links by default. */
+internal class FakeAppInfo(override val legalLinks: List<LegalLink> = emptyList()) : AppInfo {
+    override val version = AppVersion(name = "1.0.0", code = "1")
+}
+
+internal val PRIVACY_LINK = LegalLink(kind = LegalLinkKind.PrivacyPolicy, url = "https://example.com/privacy")
+internal val TERMS_LINK = LegalLink(kind = LegalLinkKind.Terms, url = "https://example.com/terms")

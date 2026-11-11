@@ -15,6 +15,19 @@ internal val resourceTR = StringResourcesUiModel(
     settingsTerms = "Kullanım koşulları",
     settingsLicenses = "Açık kaynak lisansları",
     close = "Kapat",
+    // cmpose:insights
+    insightsPromptTitle = "Uygulamayı geliştirmemize yardım edin",
+    insightsPromptMessage = "Açtığınız ekranlar gibi kullanım verilerini, uygulamayı geliştirmek için toplayabilir " +
+        "miyiz? Bu tercihi istediğiniz zaman ayarlardan değiştirebilirsiniz.",
+    insightsAllow = "İzin ver",
+    insightsDeny = "İzin verme",
+    insightsSettingsTitle = "Gizlilik",
+    insightsAnalytics = "Kullanım verisi paylaş",
+    insightsAnalyticsDescription = "Uygulamayı geliştirebilmemiz için hangi ekranları ve özellikleri " +
+        "kullandığınızı paylaşır",
+    insightsCrashReports = "Çökme raporu gönder",
+    insightsCrashReportsDescription = "Uygulama çökerse hatayı düzeltebilmemiz için ayrıntıları gönderir",
+    // /cmpose:insights
     // cmpose:purchases
     settingsPremium = "Premium",
     retry = "Tekrar dene",

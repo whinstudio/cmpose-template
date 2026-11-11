@@ -17,6 +17,7 @@ import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.review.ReviewCounterStore
 import com.kturker.multiplatform.core.review.ReviewPrompter
 import com.kturker.multiplatform.core.review.ReviewRequest
+import com.kturker.multiplatform.feature.account.contract.AccountSettingsDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
@@ -103,6 +104,18 @@ class SettingsViewModelTest {
 
         assertEquals(LicensesDestination(title = "Lisanslar", backLabel = "Geri"), navigationManager.commands.last())
     }
+    // cmpose:backend
+
+    @Test
+    fun accountRowOpensTheAccountSettings() {
+        val navigationManager = RecordingNavigationManager()
+        val viewModel = createViewModel(navigationManager = navigationManager)
+
+        viewModel.onAccountClick()
+
+        assertEquals(AccountSettingsDestination, navigationManager.commands.last())
+    }
+    // /cmpose:backend
 }
 
 private class FakeDarkModeManager : DarkModeManager {
@@ -175,6 +188,18 @@ private fun emptyStrings() = StringResourcesUiModel(
     settingsPrivacyPolicy = "",
     settingsTerms = "",
     settingsLicenses = "",
+    // cmpose:backend
+    settingsAccount = "",
+    // /cmpose:backend
+    insightsPromptTitle = "",
+    insightsPromptMessage = "",
+    insightsAllow = "",
+    insightsDeny = "",
+    insightsSettingsTitle = "",
+    insightsAnalytics = "",
+    insightsAnalyticsDescription = "",
+    insightsCrashReports = "",
+    insightsCrashReportsDescription = "",
     offlineBanner = "",
     updateAvailableTitle = "",
     updateAvailableMessage = "",

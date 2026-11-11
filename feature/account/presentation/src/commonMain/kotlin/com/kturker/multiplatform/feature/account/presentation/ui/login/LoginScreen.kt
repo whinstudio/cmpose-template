@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
@@ -26,6 +27,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
+import com.kturker.multiplatform.feature.account.presentation.ui.LegalLinksRow
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInCallbacks
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInMethods
 import com.kturker.multiplatform.feature.account.presentation.ui.uiErrorText
@@ -84,6 +86,7 @@ private fun LoginContent(
     modifier: Modifier
 ) {
     val strings = LocalStringResources.current.account
+    val uriHandler = LocalUriHandler.current
     Column(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -113,5 +116,7 @@ private fun LoginContent(
             )
         }
         state.error?.let { Text(uiErrorText(it), color = MaterialTheme.colorScheme.error) }
+        // Below both forms: the privacy policy is reachable before an account is made
+        LegalLinksRow(links = state.legalLinks, onOpen = uriHandler::openUri)
     }
 }

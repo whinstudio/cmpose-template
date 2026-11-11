@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
@@ -33,6 +34,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
 import com.kturker.multiplatform.core.multilang.resource.sharedSpacesDeleteWarning
+import com.kturker.multiplatform.feature.account.presentation.ui.LegalLinksRow
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInCallbacks
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInMethods
 import com.kturker.multiplatform.feature.account.presentation.ui.uiErrorText
@@ -51,6 +53,7 @@ private fun SettingsScreen(
     actions: SettingsActions
 ) {
     val strings = LocalStringResources.current.account
+    val uriHandler = LocalUriHandler.current
     // Leaving would clear the ViewModel mid-deletion: the system back is swallowed until it has an answer
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
@@ -96,6 +99,12 @@ private fun SettingsScreen(
             }
             if (state.needsReauth) ReauthSection(email = state.email.orEmpty(), busy = state.busy, actions = actions)
             state.error?.let { Text(uiErrorText(it), color = MaterialTheme.colorScheme.error) }
+            // cmpose:insights
+            // The privacy switches: usage data (Analytics) and crash reports (core/insights)
+            com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentSettings()
+            // /cmpose:insights
+            // Below the deletion and what it may ask for (a fresh sign-in, its error)
+            LegalLinksRow(links = state.legalLinks, onOpen = uriHandler::openUri)
         }
     }
 

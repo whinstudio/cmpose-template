@@ -12,6 +12,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.kturker.multiplatform.core.image.ImageLoaderSetup
+// cmpose:insights
+import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentDialog
+// /cmpose:insights
 import com.kturker.multiplatform.core.navigation.FeatureEntry
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
 import com.kturker.multiplatform.core.navigation.NavigationCommand
@@ -22,11 +25,18 @@ import com.kturker.multiplatform.feature.monetization.presentation.paywall.First
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 
-/**
- * The app's root, inside the app theme (AppTheme.kt): a guide screen listing the feature modules,
- * then each module's screens.
- * When you are ready, change startDestination to your own first screen and delete GuideScreen.kt.
- */
+// The app's root, inside the app theme (AppTheme.kt): a guide screen listing the feature modules, then each module's
+// screens. The app starts on GuideDestination (GuideDestination.kt), which the guide is registered under below.
+// When you are ready, replace GuideScreen with your own home screen: register it under GuideDestination in place of
+// the guide, then delete GuideScreen.kt.
+// cmpose:backend
+// From your home screen, leave a way to AccountSettingsDestination (account deletion, the privacy links): the stores
+// require it.
+// /cmpose:backend
+// cmpose:insights
+// Keep the privacy choices too: the About dialog shows InsightsConsentSettings (core/insights: usage data and crash
+// reports); put it in your own settings, so the user can change both answers.
+// /cmpose:insights
 @Composable
 fun MainScreen(navigationManager: NavigationManager = koinInject()) {
     // Coil's one image loader (core/image): caches, and Kermit logs in debug builds
@@ -85,6 +95,10 @@ fun MainScreen(navigationManager: NavigationManager = koinInject()) {
         AppUpdateEffect()
         // FirstLaunchPaywall (purchases): the paywall once, at the first launch (feature/monetization)
         FirstLaunchPaywall()
+        // cmpose:insights
+        // Analytics stays off until the user agrees: asked at launch until answered (core/insights)
+        InsightsConsentDialog()
+        // /cmpose:insights
     }
 
     NavigationLaunchedEffect(

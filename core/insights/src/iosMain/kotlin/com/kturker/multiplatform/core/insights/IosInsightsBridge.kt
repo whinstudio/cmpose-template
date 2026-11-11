@@ -25,7 +25,11 @@ interface IosInsightsBridge {
 
     fun log(message: String)
 
-    fun setCollectionEnabled(enabled: Boolean)
+    // Firebase Analytics; Info.plist starts it off (FIREBASE_ANALYTICS_COLLECTION_ENABLED) until the user agrees
+    fun setAnalyticsEnabled(enabled: Boolean)
+
+    // Crashlytics
+    fun setCrashReportsEnabled(enabled: Boolean)
 }
 
 object IosInsights {

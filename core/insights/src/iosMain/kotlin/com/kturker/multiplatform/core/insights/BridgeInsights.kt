@@ -40,8 +40,12 @@ internal class BridgeInsights(private val bridge: () -> IosInsightsBridge?) : In
         configured()?.log(message)
     }
 
-    override fun setCollectionEnabled(enabled: Boolean) {
-        configured()?.setCollectionEnabled(enabled)
+    override fun setAnalyticsEnabled(enabled: Boolean) {
+        configured()?.setAnalyticsEnabled(enabled)
+    }
+
+    override fun setCrashReportsEnabled(enabled: Boolean) {
+        configured()?.setCrashReportsEnabled(enabled)
     }
 
     private fun configured(): IosInsightsBridge? = bridge()?.takeIf { it.isConfigured }

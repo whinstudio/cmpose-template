@@ -40,7 +40,8 @@ class SessionEndedNoticeTest {
         Dispatchers.resetMain()
     }
 
-    private fun settings() = SettingsViewModel(repository, auth, tokens, RecordingNavigationManager(), FakePendingDisplayName())
+    private fun settings() =
+        SettingsViewModel(repository, auth, tokens, RecordingNavigationManager(), FakePendingDisplayName(), FakeAppInfo())
 
     @Test
     fun aSignOutOnUnauthorizedShowsTheNoticeOnce() = runTest {
@@ -53,9 +54,9 @@ class SessionEndedNoticeTest {
         }
         advanceUntilIdle()
 
-        assertTrue(LoginViewModel(auth, profileSync).state.value.sessionEnded)
+        assertTrue(LoginViewModel(auth, profileSync, FakeAppInfo()).state.value.sessionEnded)
         // A later sign-in screen no longer shows it
-        assertFalse(LoginViewModel(auth, profileSync).state.value.sessionEnded)
+        assertFalse(LoginViewModel(auth, profileSync, FakeAppInfo()).state.value.sessionEnded)
     }
 
     @Test
@@ -63,7 +64,7 @@ class SessionEndedNoticeTest {
         settings().signOut()
         advanceUntilIdle()
 
-        assertFalse(LoginViewModel(auth, profileSync).state.value.sessionEnded)
+        assertFalse(LoginViewModel(auth, profileSync, FakeAppInfo()).state.value.sessionEnded)
     }
 
     @Test
@@ -76,7 +77,7 @@ class SessionEndedNoticeTest {
             confirmDelete()
         }
         advanceUntilIdle()
-        val login = LoginViewModel(auth, profileSync)
+        val login = LoginViewModel(auth, profileSync, FakeAppInfo())
 
         login.signInWithGoogle()
 

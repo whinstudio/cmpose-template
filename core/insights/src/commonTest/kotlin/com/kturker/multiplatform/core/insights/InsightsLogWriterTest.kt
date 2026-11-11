@@ -97,7 +97,8 @@ class InsightsLogWriterTest {
         NoOpInsights.setUserId(null)
         NoOpInsights.recordNonFatal(IllegalStateException("x"), "boom")
         NoOpInsights.log("breadcrumb")
-        NoOpInsights.setCollectionEnabled(false)
+        NoOpInsights.setAnalyticsEnabled(false)
+        NoOpInsights.setCrashReportsEnabled(false)
     }
 }
 
@@ -123,5 +124,7 @@ private class RecordingInsights(override val isEnabled: Boolean = true) : Insigh
         logs += message
     }
 
-    override fun setCollectionEnabled(enabled: Boolean) = Unit
+    override fun setAnalyticsEnabled(enabled: Boolean) = Unit
+
+    override fun setCrashReportsEnabled(enabled: Boolean) = Unit
 }

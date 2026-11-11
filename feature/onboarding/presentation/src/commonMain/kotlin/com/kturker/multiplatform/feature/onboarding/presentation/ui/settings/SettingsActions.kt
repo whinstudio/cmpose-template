@@ -7,6 +7,11 @@ internal interface SettingsActions {
     fun onModeChange(themeMode: ThemeMode)
     fun onLanguageChange(language: AppLanguage)
     fun onNavigateUp()
+
+    // cmpose:backend
+    fun onAccountClick()
+
+    // /cmpose:backend
     fun onPremiumClick()
     fun onAdExamplesClick()
     fun onRateAppClick()

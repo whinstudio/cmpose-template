@@ -8,6 +8,12 @@ kotlin {
             implementation(projects.feature.account.contract)
             // SelectedSpace: reloaded once the profile sync has renamed the personal space
             implementation(projects.feature.sharing.contract)
+            // AppInfo.legalLinks: the privacy policy and terms links on the sign-in and account screens
+            implementation(projects.core.about)
+            // cmpose:insights
+            // InsightsConsentSettings: the privacy switches on the account settings
+            implementation(projects.core.insights)
+            // /cmpose:insights
             // Space and Profile, the paths of GET /spaces, PUT /me/profile and DELETE /me
             implementation(projects.core.api)
             implementation(projects.core.auth)

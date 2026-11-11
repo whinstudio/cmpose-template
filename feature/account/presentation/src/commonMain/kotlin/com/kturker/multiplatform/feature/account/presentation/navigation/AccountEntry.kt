@@ -9,7 +9,9 @@ import org.koin.core.annotation.Named
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
-// Lists the account's settings on a blank app's start screen (GuideScreen).
+// Lists the account's settings on a blank app's start screen (GuideScreen). That screen (AccountSettingsDestination)
+// holds the account deletion and the privacy policy and terms links, which the stores ask for: a start screen of
+// your own keeps a way to it.
 @Single(binds = [FeatureEntry::class])
 @Named("AccountEntry")
 internal class AccountEntry(@Provided private val languageManager: LanguageManager) : FeatureEntry {

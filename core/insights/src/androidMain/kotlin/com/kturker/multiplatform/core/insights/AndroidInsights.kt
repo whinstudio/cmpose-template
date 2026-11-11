@@ -41,10 +41,12 @@ internal class AndroidInsights(private val crashlytics: FirebaseCrashlytics, pri
 
     override fun log(message: String) = crashlytics.log(message)
 
-    override fun setCollectionEnabled(enabled: Boolean) {
-        crashlytics.setCrashlyticsCollectionEnabled(enabled)
+    // Both settings are kept by Firebase across launches; InsightsConsentController applies them on every launch
+    override fun setAnalyticsEnabled(enabled: Boolean) =
         analytics.setAnalyticsCollectionEnabled(enabled)
-    }
+
+    override fun setCrashReportsEnabled(enabled: Boolean) =
+        crashlytics.setCrashlyticsCollectionEnabled(enabled)
 }
 
 // Analytics takes strings, longs and doubles

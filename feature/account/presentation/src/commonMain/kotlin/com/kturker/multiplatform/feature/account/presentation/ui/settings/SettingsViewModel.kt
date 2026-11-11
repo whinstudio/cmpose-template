@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.account.presentation.ui.settings
 
 import androidx.lifecycle.viewModelScope
+import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.auth.AuthResult
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.AuthState
@@ -44,11 +45,12 @@ internal class SettingsViewModel(
     @Provided private val auth: AuthService,
     @Provided private val tokens: SessionTokens,
     @Provided private val navigationManager: NavigationManager,
-    private val pendingName: PendingDisplayName
+    private val pendingName: PendingDisplayName,
+    @Provided appInfo: AppInfo
 ) : CoreViewModel(),
     SettingsActions {
 
-    private val _state = MutableStateFlow(SettingsUiState())
+    private val _state = MutableStateFlow(SettingsUiState(legalLinks = appInfo.legalLinks))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
 
     // The account the deletion was confirmed for; a sign-in with another one stops it

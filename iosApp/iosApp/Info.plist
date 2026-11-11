@@ -44,6 +44,11 @@
             </dict>
             <!-- /cmpose:backend -->
         </array>
+        <!-- cmpose:insights -->
+        <!-- Firebase Analytics stays off until the user agrees; InsightsConsentController turns it on then -->
+        <key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+        <false/>
+        <!-- /cmpose:insights -->
         <key>GADApplicationIdentifier</key>
         <string>ca-app-pub-3940256099942544~1458002511</string>
         <key>NSUserTrackingUsageDescription</key>

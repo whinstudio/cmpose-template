@@ -1,5 +1,3 @@
-@file:Suppress("MatchingDeclarationName")
-
 package com.kturker.multiplatform
 
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +6,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,7 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -30,37 +29,19 @@ import androidx.compose.ui.unit.dp
 import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.about.LegalLinkKind
 import com.kturker.multiplatform.core.about.licenses.LicensesDestination
+// cmpose:insights
+import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentSettings
+// /cmpose:insights
 import com.kturker.multiplatform.core.navigation.FeatureEntry
-import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.review.rememberReviewRequester
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
-// cmpose:backend
-// A Destination: the sign-in gate (SessionGate.kt) navigates back to it after a sign-in
-// /cmpose:backend
-@Serializable
-internal data object GuideDestination : NavigationCommand.Destination
-
 /**
- * The About dialog's texts. English by default; a multilang project provides them in the app's
- * language (MainScreen.kt).
- */
-internal data class AboutTexts(
-    val title: String = "About",
-    val version: (String) -> String = { "Version $it" },
-    val privacyPolicy: String = "Privacy policy",
-    val terms: String = "Terms of use",
-    val licenses: String = "Open source licenses",
-    val close: String = "Close"
-)
-
-internal val LocalAboutTexts = staticCompositionLocalOf { AboutTexts() }
-
-/**
- * The guide's own texts stay English: they are for you, the developer; the About dialog follows [LocalAboutTexts].
+ * The guide, on the start destination (GuideDestination.kt) until your own home screen takes its place
+ * (MainScreen.kt). Its own texts stay English: they are for you, the developer; the About dialog follows
+ * [LocalAboutTexts] (AboutTexts.kt).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,13 +126,18 @@ private fun AboutDialog(
         onDismissRequest = onDismiss,
         title = { Text(texts.title) },
         text = {
-            Column {
+            // Scrolls: at a large font size on a small phone the links and switches would not fit
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(texts.version(appInfo.version.displayText))
                 appInfo.legalLinks.forEach { link ->
                     TextButton(onClick = { uriHandler.openUri(link.url) }) {
                         Text(if (link.kind == LegalLinkKind.PrivacyPolicy) texts.privacyPolicy else texts.terms)
                     }
                 }
+                // cmpose:insights
+                // The privacy switches: usage data (Analytics) and crash reports (core/insights)
+                InsightsConsentSettings(modifier = Modifier.padding(top = 16.dp))
+                // /cmpose:insights
             }
         },
         confirmButton = {

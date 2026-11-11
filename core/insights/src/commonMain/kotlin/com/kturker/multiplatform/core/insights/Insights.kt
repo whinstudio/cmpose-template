@@ -24,7 +24,11 @@ interface Insights {
     /** A breadcrumb: sent with the next crash or non-fatal. */
     fun log(message: String)
 
-    fun setCollectionEnabled(enabled: Boolean)
+    /** Firebase Analytics. Off until the user agrees: see InsightsConsentController. */
+    fun setAnalyticsEnabled(enabled: Boolean)
+
+    /** Crashlytics: crash reports, non-fatals and breadcrumbs. On unless the user turns it off. */
+    fun setCrashReportsEnabled(enabled: Boolean)
 }
 
 /** No Firebase config: off, and every call returns at once. */
@@ -45,5 +49,7 @@ internal object NoOpInsights : Insights {
 
     override fun log(message: String) = Unit
 
-    override fun setCollectionEnabled(enabled: Boolean) = Unit
+    override fun setAnalyticsEnabled(enabled: Boolean) = Unit
+
+    override fun setCrashReportsEnabled(enabled: Boolean) = Unit
 }

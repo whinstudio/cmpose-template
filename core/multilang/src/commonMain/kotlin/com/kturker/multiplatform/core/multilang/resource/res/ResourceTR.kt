@@ -24,6 +24,20 @@ internal val resourceTR = StringResourcesUiModel(
     settingsPrivacyPolicy = "Gizlilik politikası",
     settingsTerms = "Kullanım koşulları",
     settingsLicenses = "Açık kaynak lisansları",
+    // cmpose:backend
+    settingsAccount = "Hesap",
+    // /cmpose:backend
+    insightsPromptTitle = "Uygulamayı geliştirmemize yardım edin",
+    insightsPromptMessage = "Açtığınız ekranlar gibi kullanım verilerini, uygulamayı geliştirmek için toplayabilir " +
+        "miyiz? Bu tercihi istediğiniz zaman ayarlardan değiştirebilirsiniz.",
+    insightsAllow = "İzin ver",
+    insightsDeny = "İzin verme",
+    insightsSettingsTitle = "Gizlilik",
+    insightsAnalytics = "Kullanım verisi paylaş",
+    insightsAnalyticsDescription = "Uygulamayı geliştirebilmemiz için hangi ekranları ve özellikleri " +
+        "kullandığınızı paylaşır",
+    insightsCrashReports = "Çökme raporu gönder",
+    insightsCrashReportsDescription = "Uygulama çökerse hatayı düzeltebilmemiz için ayrıntıları gönderir",
     offlineBanner = "Bağlantı yok",
     updateAvailableTitle = "Güncelleme var",
     updateAvailableMessage = "Uygulamanın yeni bir sürümü var.",

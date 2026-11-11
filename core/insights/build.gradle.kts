@@ -1,11 +1,14 @@
 plugins {
     alias(libs.plugins.kmp.library.plugin)
+    // The consent prompt and the privacy switches (consent/ui)
+    alias(libs.plugins.compose.multiplatform.plugin)
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kermit)
+            implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(libs.kermit.test)

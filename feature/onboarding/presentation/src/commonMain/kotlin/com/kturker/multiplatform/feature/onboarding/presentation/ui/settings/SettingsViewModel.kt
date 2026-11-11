@@ -12,6 +12,7 @@ import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.presentation.CoreViewModel
 import com.kturker.multiplatform.core.review.ReviewPrompter
+import com.kturker.multiplatform.feature.account.contract.AccountSettingsDestination
 import com.kturker.multiplatform.feature.monetization.contract.AdsDemoDestination
 import com.kturker.multiplatform.feature.monetization.contract.PaywallDestination
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,6 +79,13 @@ internal class SettingsViewModel(
         }
     }
 
+    // cmpose:backend
+    // The account settings: sign-out, account deletion and the privacy links, which the stores require in reach
+    override fun onAccountClick() {
+        navigationManager.navigate(navigationCommand = AccountSettingsDestination)
+    }
+
+    // /cmpose:backend
     override fun onPremiumClick() {
         navigationManager.navigate(navigationCommand = PaywallDestination)
     }

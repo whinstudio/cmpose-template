@@ -28,11 +28,18 @@ class BridgeInsightsTest {
         insights.log("after")
         insights.logEvent("screen_view", mapOf("screen" to "home"))
         insights.setUserId("u1")
-        insights.setCollectionEnabled(false)
+        insights.setAnalyticsEnabled(false)
+        insights.setCrashReportsEnabled(true)
 
         assertTrue(insights.isEnabled)
         assertEquals(
-            listOf("log:after", "event:screen_view:{screen=home}", "user:u1", "collection:false"),
+            listOf(
+                "log:after",
+                "event:screen_view:{screen=home}",
+                "user:u1",
+                "analytics:false",
+                "crashReports:true"
+            ),
             registered.calls
         )
     }
@@ -87,7 +94,11 @@ internal class FakeIosInsightsBridge(override val isConfigured: Boolean = true) 
         calls += "log:$message"
     }
 
-    override fun setCollectionEnabled(enabled: Boolean) {
-        calls += "collection:$enabled"
+    override fun setAnalyticsEnabled(enabled: Boolean) {
+        calls += "analytics:$enabled"
+    }
+
+    override fun setCrashReportsEnabled(enabled: Boolean) {
+        calls += "crashReports:$enabled"
     }
 }

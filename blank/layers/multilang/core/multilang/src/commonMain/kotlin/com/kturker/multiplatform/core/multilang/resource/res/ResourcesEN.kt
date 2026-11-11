@@ -15,6 +15,18 @@ internal val resourceEN = StringResourcesUiModel(
     settingsTerms = "Terms of use",
     settingsLicenses = "Open source licenses",
     close = "Close",
+    // cmpose:insights
+    insightsPromptTitle = "Help improve the app",
+    insightsPromptMessage = "Can we collect usage data, such as which screens you open, to improve the app? " +
+        "You can change this at any time in the settings.",
+    insightsAllow = "Allow",
+    insightsDeny = "Don't allow",
+    insightsSettingsTitle = "Privacy",
+    insightsAnalytics = "Share usage data",
+    insightsAnalyticsDescription = "Which screens and features you use, to help improve the app",
+    insightsCrashReports = "Send crash reports",
+    insightsCrashReportsDescription = "What went wrong when the app crashes, to help fix it",
+    // /cmpose:insights
     // cmpose:purchases
     settingsPremium = "Premium",
     retry = "Try again",

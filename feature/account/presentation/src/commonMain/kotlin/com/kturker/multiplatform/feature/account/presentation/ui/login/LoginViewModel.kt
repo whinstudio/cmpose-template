@@ -1,6 +1,7 @@
 package com.kturker.multiplatform.feature.account.presentation.ui.login
 
 import androidx.lifecycle.viewModelScope
+import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.auth.AuthResult
 import com.kturker.multiplatform.core.auth.AuthService
 import com.kturker.multiplatform.core.auth.AuthState
@@ -21,15 +22,19 @@ import org.koin.core.annotation.Provided
  * sign-in tells the server the display name and the personal space's localized name ([ProfileSync]).
  */
 @KoinViewModel
-internal class LoginViewModel(@Provided private val auth: AuthService, private val profileSync: ProfileSync) :
-    CoreViewModel(),
+internal class LoginViewModel(
+    @Provided private val auth: AuthService,
+    private val profileSync: ProfileSync,
+    @Provided appInfo: AppInfo
+) : CoreViewModel(),
     LoginActions {
 
     // The notice is taken once: it belongs to the sign-in screen right after the sign-out, not to later ones
     private val _state = MutableStateFlow(
         LoginUiState(
             sessionEnded = auth.takeSessionEndedNotice(),
-            firebaseUnavailable = auth.state.value == AuthState.Unavailable
+            firebaseUnavailable = auth.state.value == AuthState.Unavailable,
+            legalLinks = appInfo.legalLinks
         )
     )
     val state: StateFlow<LoginUiState> = _state.asStateFlow()

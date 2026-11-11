@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.account.presentation.ui.settings
 
+import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 
 internal data class SettingsUiState(
@@ -14,5 +15,7 @@ internal data class SettingsUiState(
     val loadingSharedSpaces: Boolean = false,
     val busy: Boolean = false,
     val needsReauth: Boolean = false,
-    val error: UiError? = null
+    val error: UiError? = null,
+    /** The privacy policy and terms below the deletion; empty while their URLs are (core/about LegalUrls.kt). */
+    val legalLinks: List<LegalLink> = emptyList()
 )

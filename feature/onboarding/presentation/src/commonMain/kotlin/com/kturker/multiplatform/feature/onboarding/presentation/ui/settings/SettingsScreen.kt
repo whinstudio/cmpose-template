@@ -33,6 +33,7 @@ import com.kturker.multiplatform.core.designsystem.icon.IcBack
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.designsystem.theme.LocalColorsPalette
 import com.kturker.multiplatform.core.designsystem.theme.Spacing
+import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentSettings
 import com.kturker.multiplatform.core.multilang.language.AppLanguage
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -90,6 +91,13 @@ internal fun SettingsScreen(
             onLanguageChange = actions::onLanguageChange
         )
 
+        // cmpose:backend
+        SettingsLinkRow(
+            text = LocalStringResources.current.settingsAccount,
+            onClick = actions::onAccountClick
+        )
+
+        // /cmpose:backend
         SettingsLinkRow(
             text = LocalStringResources.current.settingsPremium,
             onClick = actions::onPremiumClick
@@ -109,6 +117,9 @@ internal fun SettingsScreen(
             label = LocalStringResources.current.settingsVersion,
             value = uiState.versionText
         )
+
+        // Usage data (Analytics, off until the user allows it) and crash reports (core/insights)
+        InsightsConsentSettings(modifier = Modifier.padding(horizontal = Spacing.lg))
 
         uiState.privacyPolicyUrl?.let { url ->
             SettingsLinkRow(

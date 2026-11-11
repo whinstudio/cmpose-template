@@ -28,6 +28,20 @@ data class StringResourcesUiModel(
     val settingsPrivacyPolicy: String,
     val settingsTerms: String,
     val settingsLicenses: String,
+    // cmpose:backend
+    /** The settings' Account row, which opens the account settings (only with the backend). */
+    val settingsAccount: String,
+    // /cmpose:backend
+    /** The analytics prompt and the privacy switches (core/insights' InsightsConsentTexts). */
+    val insightsPromptTitle: String,
+    val insightsPromptMessage: String,
+    val insightsAllow: String,
+    val insightsDeny: String,
+    val insightsSettingsTitle: String,
+    val insightsAnalytics: String,
+    val insightsAnalyticsDescription: String,
+    val insightsCrashReports: String,
+    val insightsCrashReportsDescription: String,
     val offlineBanner: String,
     val updateAvailableTitle: String,
     val updateAvailableMessage: String,

@@ -1,5 +1,6 @@
 package com.kturker.multiplatform.feature.account.presentation.ui.login
 
+import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 
 /** The server's limit on a display name; a longer one is refused. */
@@ -17,7 +18,9 @@ internal data class LoginUiState(
     /** The previous session ended on the server's 401, not by the user's choice; cleared by the next attempt. */
     val sessionEnded: Boolean = false,
     /** The app has no Firebase config: the screen says so and every sign-in method is off. */
-    val firebaseUnavailable: Boolean = false
+    val firebaseUnavailable: Boolean = false,
+    /** The privacy policy and terms below the form; empty while their URLs are (core/about LegalUrls.kt). */
+    val legalLinks: List<LegalLink> = emptyList()
 ) {
     val signInEnabled: Boolean get() = !busy && !firebaseUnavailable
 

@@ -99,6 +99,7 @@
         </dict>
         <!-- /cmpose:insights -->
         <!-- cmpose:backend -->
+        <!-- Name: the display name is shared with the other members of the space. -->
         <dict>
             <key>NSPrivacyCollectedDataType</key>
             <string>NSPrivacyCollectedDataTypeName</string>
@@ -135,9 +136,10 @@
                 <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
             </array>
         </dict>
+        <!-- OtherUserContent: the content of the shared space, visible to its members. -->
         <dict>
             <key>NSPrivacyCollectedDataType</key>
-            <string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+            <string>NSPrivacyCollectedDataTypeOtherUserContent</string>
             <key>NSPrivacyCollectedDataTypeLinked</key>
             <true/>
             <key>NSPrivacyCollectedDataTypeTracking</key>
@@ -165,6 +167,7 @@
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
                 <string>C617.1</string>
+                <string>0A2A.1</string>
             </array>
         </dict>
         <dict>
