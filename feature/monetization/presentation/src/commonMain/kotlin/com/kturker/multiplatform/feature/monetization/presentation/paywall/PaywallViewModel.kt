@@ -63,7 +63,7 @@ internal class PaywallViewModel(
         if (!purchasesManager.isAvailable) return
         _uiState.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val offer = purchasesManager.offer()
+            val offer = offeredPackages(purchasesManager.offer(), PAYWALL_PERIODS)
             _uiState.update { state ->
                 if (offer == null || offer.packages.isEmpty()) {
                     state.copy(

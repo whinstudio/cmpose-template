@@ -35,7 +35,13 @@ private val ANNUAL = PaywallPackage("annual", PackagePeriod.ANNUAL, "$29.99", "$
 private val LIFETIME = PaywallPackage("lifetime", PackagePeriod.LIFETIME, "$79.99", null, null, null)
 private val PRIVACY = LegalLink(kind = LegalLinkKind.PrivacyPolicy, url = "https://example.com/privacy")
 private val TERMS = LegalLink(kind = LegalLinkKind.Terms, url = "https://example.com/terms")
-private val OFFER = PaywallOffer(listOf(WEEKLY, MONTHLY, ANNUAL))
+private val OFFER = PaywallOffer(listOf(WEEKLY, MONTHLY, ANNUAL, LIFETIME))
+
+// What the paywall shows of OFFER: it holds a package of every main period, so this is never empty whatever
+// PAYWALL_PERIODS is set to (generators rewrite it) and the tests below never depend on its value.
+private val SHOWN = checkNotNull(offeredPackages(OFFER, PAYWALL_PERIODS))
+private val SELECTED_FIRST = checkNotNull(defaultSelection(SHOWN.packages))
+private val OTHER_SHOWN = SHOWN.packages.last().id
 
 // viewModelScope runs on Dispatchers.Main, which the tests swap for an eager test dispatcher.
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -68,12 +74,12 @@ class PaywallViewModelTest {
     ).also { createdViewModels += it }
 
     @Test
-    fun theOfferLoadsWithTheAnnualPlanSelected() {
+    fun theOfferLoadsWithItsDefaultPlanSelected() {
         val state = createViewModel(FakePurchasesManager(offerResult = OFFER)).uiState.value
 
         assertFalse(state.loading)
-        assertEquals(OFFER, state.offer)
-        assertEquals(ANNUAL.id, state.selectedPackageId)
+        assertEquals(SHOWN, state.offer)
+        assertEquals(SELECTED_FIRST, state.selectedPackageId)
         assertNull(state.error)
     }
 
@@ -106,7 +112,7 @@ class PaywallViewModelTest {
         viewModel.onRetry()
 
         assertEquals(2, purchases.offerCalls)
-        assertEquals(OFFER, viewModel.uiState.value.offer)
+        assertEquals(SHOWN, viewModel.uiState.value.offer)
         assertNull(viewModel.uiState.value.error)
     }
 
@@ -123,11 +129,11 @@ class PaywallViewModelTest {
         val purchases = FakePurchasesManager(offerResult = OFFER)
         val viewModel = createViewModel(purchases)
 
-        viewModel.onPackageSelected(MONTHLY.id)
+        viewModel.onPackageSelected(OTHER_SHOWN)
         viewModel.onPurchaseClick()
         viewModel.onDismiss()
 
-        assertEquals(listOf(MONTHLY.id), purchases.purchasedIds)
+        assertEquals(listOf(OTHER_SHOWN), purchases.purchasedIds)
         assertEquals(listOf<NavigationCommand>(NavigationCommand.NavigateUp), navigationManager.commands)
     }
 
@@ -150,7 +156,7 @@ class PaywallViewModelTest {
         assertEquals(PaywallError.Purchase(PurchaseFailure.NETWORK), viewModel.uiState.value.error)
         assertEquals(emptyList<NavigationCommand>(), navigationManager.commands)
 
-        viewModel.onPackageSelected(WEEKLY.id)
+        viewModel.onPackageSelected(OTHER_SHOWN)
         assertNull(viewModel.uiState.value.error)
     }
 
@@ -163,12 +169,12 @@ class PaywallViewModelTest {
         viewModel.onPurchaseClick()
         viewModel.onPurchaseClick()
         viewModel.onRestoreClick()
-        viewModel.onPackageSelected(WEEKLY.id)
+        viewModel.onPackageSelected(OTHER_SHOWN)
 
         assertTrue(viewModel.uiState.value.inProgress)
-        assertEquals(listOf(ANNUAL.id), purchases.purchasedIds)
+        assertEquals(listOf(SELECTED_FIRST), purchases.purchasedIds)
         assertEquals(0, purchases.restoreCalls)
-        assertEquals(ANNUAL.id, viewModel.uiState.value.selectedPackageId)
+        assertEquals(SELECTED_FIRST, viewModel.uiState.value.selectedPackageId)
 
         pending.complete(Unit)
 
