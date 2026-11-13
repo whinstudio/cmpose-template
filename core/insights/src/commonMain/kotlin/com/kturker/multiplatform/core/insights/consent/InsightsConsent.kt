@@ -43,6 +43,22 @@ class InsightsConsentController(private val store: InsightsConsentStore, private
     val needsAnalyticsPrompt: Boolean
         get() = insights.isEnabled && analytics.value == AnalyticsConsent.Unknown
 
+    // Tapping outside or back: the prompt goes for this run only, and comes back at the next launch
+    private var promptDismissed = false
+
+    private val promptPending = MutableStateFlow(false)
+
+    /**
+     * True while the prompt is to be shown now: [needsAnalyticsPrompt], and not dismissed in this run. The prompt
+     * (InsightsConsentDialog) shows while it is true, and the first-launch paywall waits for it
+     * (AnalyticsLaunchPrompt).
+     */
+    val analyticsPromptPending: StateFlow<Boolean> = promptPending.asStateFlow()
+
+    init {
+        updatePromptPending()
+    }
+
     /**
      * Hands the saved answers to Firebase. At launch: Android when Koin starts (InsightsModule), iOS once the Swift
      * bridge is registered (registerInsightsBridge), since before that no call reaches Firebase.
@@ -50,11 +66,19 @@ class InsightsConsentController(private val store: InsightsConsentStore, private
     fun apply() {
         insights.setAnalyticsEnabled(analytics.value == AnalyticsConsent.Granted)
         insights.setCrashReportsEnabled(crashReports.value)
+        // iOS: Firebase is there only from now on, so the prompt may have become due
+        updatePromptPending()
     }
 
     fun grantAnalytics() = answerAnalytics(AnalyticsConsent.Granted)
 
     fun denyAnalytics() = answerAnalytics(AnalyticsConsent.Denied)
+
+    /** The prompt was closed without an answer: nothing is saved, and it is not shown again in this run. */
+    fun dismissAnalyticsPrompt() {
+        promptDismissed = true
+        updatePromptPending()
+    }
 
     fun setCrashReports(enabled: Boolean) {
         store.save(analytics = analytics.value, crashReports = enabled)
@@ -66,6 +90,11 @@ class InsightsConsentController(private val store: InsightsConsentStore, private
         store.save(analytics = answer, crashReports = crashReports.value)
         analytics.value = answer
         insights.setAnalyticsEnabled(answer == AnalyticsConsent.Granted)
+        updatePromptPending()
+    }
+
+    private fun updatePromptPending() {
+        promptPending.value = needsAnalyticsPrompt && !promptDismissed
     }
 }
 

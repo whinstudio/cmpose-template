@@ -125,10 +125,75 @@ class InsightsConsentControllerTest {
         controller.apply()
 
         assertFalse(controller.needsAnalyticsPrompt)
+        assertFalse(controller.analyticsPromptPending.value)
+    }
+
+    // The first-launch paywall waits while the prompt is pending (AnalyticsLaunchPrompt)
+    @Test
+    fun theUnansweredPromptIsPending() {
+        val controller = InsightsConsentController(store, insights)
+
+        assertTrue(controller.analyticsPromptPending.value)
+    }
+
+    @Test
+    fun allowingEndsThePrompt() {
+        val controller = InsightsConsentController(store, insights)
+
+        controller.grantAnalytics()
+
+        assertFalse(controller.analyticsPromptPending.value)
+    }
+
+    @Test
+    fun denyingEndsThePrompt() {
+        val controller = InsightsConsentController(store, insights)
+
+        controller.denyAnalytics()
+
+        assertFalse(controller.analyticsPromptPending.value)
+    }
+
+    // Tapping outside or back: no answer is saved, the prompt goes for this run and comes back at the next launch
+    @Test
+    fun dismissingEndsThePromptForThisRunOnly() {
+        val controller = InsightsConsentController(store, insights)
+
+        controller.dismissAnalyticsPrompt()
+
+        assertFalse(controller.analyticsPromptPending.value)
+        assertTrue(controller.needsAnalyticsPrompt)
+        assertEquals(AnalyticsConsent.Unknown, store.analytics)
+        // apply() again (iOS, once the Swift bridge is registered) does not bring it back in this run
+        controller.apply()
+        assertFalse(controller.analyticsPromptPending.value)
+
+        val nextLaunch = InsightsConsentController(store, insights)
+        assertTrue(nextLaunch.analyticsPromptPending.value)
+    }
+
+    @Test
+    fun anEarlierAnswerIsNoPrompt() {
+        store.save(analytics = AnalyticsConsent.Denied, crashReports = true)
+
+        assertFalse(InsightsConsentController(store, insights).analyticsPromptPending.value)
+    }
+
+    // iOS: Firebase reaches Kotlin only once the Swift bridge is registered, which then calls apply() again
+    @Test
+    fun thePromptBecomesDueOnceFirebaseIsThere() {
+        val lateInsights = SwitchRecordingInsights(isEnabled = false)
+        val controller = InsightsConsentController(store, lateInsights)
+        assertFalse(controller.analyticsPromptPending.value)
+
+        lateInsights.isEnabled = true
+        controller.apply()
+
+        assertTrue(controller.analyticsPromptPending.value)
     }
 }
 
-private class SwitchRecordingInsights(override val isEnabled: Boolean = true) : Insights {
+private class SwitchRecordingInsights(override var isEnabled: Boolean = true) : Insights {
     val analytics = mutableListOf<Boolean>()
     val crashReports = mutableListOf<Boolean>()
 
