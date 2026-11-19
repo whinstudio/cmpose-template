@@ -1,3 +1,5 @@
+import convention.registerLegalUrlsCheck
+
 plugins {
     alias(libs.plugins.multiplatform.application.plugin)
     // cmpose:firebase
@@ -27,6 +29,10 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.koin.android)
 }
+
+// Store builds stop while a legal URL in core/about's LegalUrls.kt is empty; assembleRelease does not check
+val checkLegalUrls = registerLegalUrlsCheck()
+tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(checkLegalUrls) }
 
 // Network monitor: release builds get the no-op artifact, so the real monitor
 // (its manifest, call database and notifications) ships only in debug builds.

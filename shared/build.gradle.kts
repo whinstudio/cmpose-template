@@ -1,3 +1,5 @@
+import convention.registerLegalUrlsCheck
+
 plugins {
     alias(libs.plugins.kmp.library.plugin)
     alias(libs.plugins.compose.multiplatform.plugin)
@@ -77,6 +79,13 @@ kotlin {
             // /cmpose:backend
         }
     }
+}
+
+// An Xcode archive (ACTION=install) stops while a legal URL in core/about's LegalUrls.kt is empty; an Xcode
+// build (ACTION=build) does not check
+val checkLegalUrls = registerLegalUrlsCheck()
+if (providers.environmentVariable("ACTION").orNull == "install") {
+    tasks.matching { it.name == "embedAndSignAppleFrameworkForXcode" }.configureEach { dependsOn(checkLegalUrls) }
 }
 
 // Open source licences (core/about's licences screen): generated from this module's dependencies, which

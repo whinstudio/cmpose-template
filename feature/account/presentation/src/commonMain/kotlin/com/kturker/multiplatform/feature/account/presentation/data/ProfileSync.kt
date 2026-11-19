@@ -31,9 +31,11 @@ interface ProfileSync {
  * Drops the cached bearer token, then sends PUT me/profile on [scope], an app-wide one: the sign-in screen, and
  * its ViewModel, closes as soon as the user is signed in. The profile always carries both values the app has now,
  * the sign-in provider's display name (null for an email account) and the personal space's localized name: the
- * backend replaces the display name on each PUT. Once the server has the profile, [selectedSpace] reloads (the app
- * shell's own reload may have answered before the personal space got its localized name), unless another user has
- * signed in meanwhile. A failure only leaves the defaults in place (no display name, the server's space name).
+ * backend replaces the display name on each PUT. The profile is built for the user signed in at the start, so it is
+ * not sent at all if another user has signed in (or the user signed out) by the time it is ready. Once the server
+ * has the profile, [selectedSpace] reloads (the app shell's own reload may have answered before the personal space
+ * got its localized name), unless another user has signed in meanwhile. A failure only leaves the defaults in place
+ * (no display name, the server's space name).
  *
  * A sign-up's name is written to the Firebase profile first, on the same scope for the same reason: the screen that
  * asked for it is already gone. It goes to Firebase, not only to the server, because every later sign-in resends
@@ -111,6 +113,10 @@ internal class BackendProfileSync(
         tokens.forget()
         job = scope.launch {
             val profile = Profile(displayName = displayName(uid), personalSpaceName = spaceName)
+            if (auth.currentUid() != uid) {
+                log.i { "Profile not sent: another user signed in" }
+                return@launch
+            }
             val result = repository.updateProfile(profile)
             if (result is RestResult.Error) {
                 val error = result.error

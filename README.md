@@ -84,7 +84,7 @@ Another app may claim the same scheme; for a more unique one, use your package n
 
 ## Before you ship
 
-- **Privacy policy and terms:** set `PRIVACY_POLICY_URL` and `TERMS_URL` in `core/about/.../LegalUrls.kt`. Both stores ask for a privacy policy URL; while a URL is empty its row stays hidden.
+- **Privacy policy and terms:** set `PRIVACY_POLICY_URL` and `TERMS_URL` in `core/about/.../LegalUrls.kt`. Both stores ask for a privacy policy URL; while a URL is empty its row stays hidden. Store builds (`bundleRelease`, an Xcode archive) stop while a URL is empty. To override, pass `-Pcmpose.allowEmptyLegalUrls=true`, put `cmpose.allowEmptyLegalUrls=true` in `~/.gradle/gradle.properties` (not the project's tracked `gradle.properties`), or set `CMPOSE_ALLOW_EMPTY_LEGAL_URLS=true` in the environment (this also works for an Xcode archive).
 <!-- cmpose:backend -->
 - **Account deletion:** both stores require a way to delete the account inside the app. The account settings (`AccountSettingsDestination`) delete it and link the privacy policy and terms; the start screen (`GuideScreen.kt`) opens them now. When your own home screen replaces it (`MainScreen.kt`), keep a way from it to the account settings before you delete `GuideScreen.kt`.
 <!-- /cmpose:backend -->
@@ -168,14 +168,17 @@ when the connection comes back.
   (`ApiRoutes.kt`), checked against the server's OpenAPI description by `ApiContractTest`; the server does not use
   them.
 - `core/auth`: Firebase Authentication (email and password, Google, Apple) and the signed-in user's ID token.
-  Deleting an account signs an Apple user in once more and revokes the app's Apple token, as Firebase stores none. This needs the Services ID and the OAuth code flow section (Team ID, key ID, private key) of the Apple provider in the Firebase console; without them the account is still deleted and the failure is logged.
+  Deleting an account signs an Apple user in once more and revokes the app's Apple token, as Firebase stores none.
+  This needs the Services ID and the OAuth code flow section (Team ID, key ID, private key) of the Apple provider in
+  the Firebase console; without them the account is still deleted and the failure is logged.
 - `core/network`: the backend's own `HttpClient`, named `BACKEND_CLIENT`; it sends the ID token to the backend's host
   only and retries once after a 401. The app's other `HttpClient` stays without a token. `BackendConfig.kt` holds the
   addresses: the local server in debug builds, `RELEASE_BASE_URL` (a placeholder) in release builds.
 - `core/network`, the server's answers: every request to the backend carries the app's `MAJOR.MINOR.PATCH` version
-  as `X-Client-Version`; a 426 (`CLIENT_UPGRADE_REQUIRED`, the app is below the server's `MIN_CLIENT_VERSION`) opens
-  the "Update required" screen (`core/update`); a 429 (`RATE_LIMITED`) shows "Too many requests. Please try again in
-  a minute.". `RELEASE_BASE_URL` must end in `/api/v1/` (the server serves its API there; request paths have no leading slash).
+  as `X-Client-Version`; a 426 (`CLIENT_UPGRADE_REQUIRED`, the app is below the server's `MIN_CLIENT_VERSION`)
+  opens the "Update required" screen (`core/update`); a 429 (`RATE_LIMITED`) shows "Too many requests. Please try
+  again in a minute.". `RELEASE_BASE_URL` must end in `/api/v1/` (the server serves its API there; request paths
+  have no leading slash).
 - `core/image`: images the backend serves load with the token (`core/auth` adds the backend client's fetcher through
   an `ImageLoaderCustomizer`); `normalizeImageForUpload` turns a picked photo into a JPEG (at most 2048 px and 5 MB,
   HEIC included) before an upload.
@@ -188,15 +191,15 @@ when the connection comes back.
 **Reaching the local server** (debug builds; release builds use `RELEASE_BASE_URL`):
 
 - Android emulator and Android phone over USB: run `adb reverse tcp:18001 tcp:18001` again after each emulator
-  start, USB reconnection or adb restart; the app uses `localhost:18001`, which the tunnel carries to the computer. (In apps targeting
-  API 37, Android 17 requires the runtime `ACCESS_LOCAL_NETWORK` permission for the emulator's `10.0.2.2` alias,
-  which the template does not request; loopback is not local network.)
+  start, USB reconnection or adb restart; the app uses `localhost:18001`, which the tunnel carries to the computer.
+  (In apps targeting API 37, Android 17 requires the runtime `ACCESS_LOCAL_NETWORK` permission for the emulator's
+  `10.0.2.2` alias, which the template does not request; loopback is not local network.)
 - iOS simulator: `localhost:18001`, the Mac's own loopback. A physical iPhone cannot use `localhost`; it would need
   the Mac's address on the local network, which the template does not set and the debug App Transport Security
   exception does not cover.
 
-Plain HTTP to these addresses is allowed in debug builds only (`androidApp/src/debug/res/xml/network_security_config.xml`,
-`NSAllowsLocalNetworking` in the Debug `Info.plist`).
+Plain HTTP to these addresses is allowed in debug builds only
+(`androidApp/src/debug/res/xml/network_security_config.xml`, `NSAllowsLocalNetworking` in the Debug `Info.plist`).
 
 **Firebase files.** Each developer adds their own, and git ignores both:
 

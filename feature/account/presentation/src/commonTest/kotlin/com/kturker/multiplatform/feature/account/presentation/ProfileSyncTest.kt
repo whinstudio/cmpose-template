@@ -80,16 +80,29 @@ class ProfileSyncTest {
         assertEquals(listOf("forgetToken", "updateProfile"), log)
     }
 
-    // Signed out (or switched account) before the answer: the reload would belong to someone else
+    // Signed out (or switched account) before the profile is sent: it was built for someone else
     @Test
-    fun noReloadWhenTheUserChangedBeforeTheAnswer() = runTest {
+    fun noProfileWhenTheUserChangedBeforeItIsSent() = runTest {
         val sync = sync(this)
 
         sync.afterSignIn()
         auth.signOut(SignOutReason.USER)
         sync.job?.join()
 
-        assertEquals(listOf("forgetToken", "signOut", "updateProfile"), log)
+        assertEquals(listOf("forgetToken", "signOut"), log)
+    }
+
+    // Another account signed in while the name was being written: the profile is never sent for it
+    @Test
+    fun aProfileIsNotSentWhenAnotherUserSignedInMeanwhile() = runTest {
+        auth.onSetDisplayName = { auth.switchUser("u2") }
+        val sync = sync(this)
+
+        sync.afterSignUp("Ada")
+        sync.job?.join()
+
+        assertTrue(repository.profiles.isEmpty())
+        assertFalse("refreshSelectedSpace" in log)
     }
 
     // The app's language at the moment of the sign-in, not the device's

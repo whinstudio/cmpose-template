@@ -73,7 +73,15 @@ internal class FakeAuthService(
      */
     var stateLags = false
 
+    /** Runs inside [setDisplayName], once the write is accepted, to simulate something happening meanwhile. */
+    var onSetDisplayName: () -> Unit = {}
+
     private var firebaseUid: String? = (initial as? AuthState.SignedIn)?.uid
+
+    /** Makes [uid] Firebase's current user without a sign-in, leaving [state] as it is. */
+    fun switchUser(uid: String?) {
+        firebaseUid = uid
+    }
 
     override fun currentUid(): String? = firebaseUid
 
@@ -105,6 +113,7 @@ internal class FakeAuthService(
         if (uid != firebaseUid) return AuthResult.Failure(AuthFailure.UNKNOWN)
         log += "setDisplayName:$name"
         if (setDisplayNameResult == AuthResult.Success) displayName = name
+        onSetDisplayName()
         return setDisplayNameResult
     }
 
