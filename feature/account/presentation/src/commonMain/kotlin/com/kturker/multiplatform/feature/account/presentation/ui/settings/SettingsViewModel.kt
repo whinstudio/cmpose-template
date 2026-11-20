@@ -14,6 +14,7 @@ import com.kturker.multiplatform.core.navigation.NavigationManager
 import com.kturker.multiplatform.core.presentation.CoreViewModel
 import com.kturker.multiplatform.feature.account.presentation.data.AccountRepository
 import com.kturker.multiplatform.feature.account.presentation.data.PendingDisplayName
+import com.kturker.multiplatform.feature.account.presentation.data.joinedCount
 import com.kturker.multiplatform.feature.account.presentation.data.sharedOwnedCount
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 import com.kturker.multiplatform.feature.account.presentation.ui.isUnauthorized
@@ -31,13 +32,13 @@ import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Provided
 
 /**
- * Sign-out and account deletion. The confirmation names the shared spaces the deletion takes from their members
- * (GET /spaces). Deletion checks with Firebase first (canDeleteNow), then deletes the server's data (DELETE /me),
- * then the Firebase user: an old session asks for a fresh sign-in before anything is deleted. Should Firebase still
- * refuse at the end, the same sign-in starts the whole flow again; the server answers the repeated DELETE /me
- * with 204. An Apple user signs in again before the deletion, because Firebase does not keep the Apple token and
- * revoking it does not block the deletion. Once the Firebase user is gone, so is a sign-up name of theirs still
- * waiting for Firebase ([PendingDisplayName]): personal data does not outlive the account.
+ * Sign-out and account deletion. The confirmation names the shared spaces the deletion takes from their members and the
+ * spaces of others where the user's content stays (GET /spaces). Deletion checks with Firebase first (canDeleteNow),
+ * then deletes the server's data (DELETE /me), then the Firebase user: an old session asks for a fresh sign-in before
+ * anything is deleted. Should Firebase still refuse at the end, the same sign-in starts the whole flow again; the
+ * server answers the repeated DELETE /me with 204. An Apple user signs in again before the deletion, because Firebase
+ * does not keep the Apple token and revoking it does not block the deletion. Once the Firebase user is gone, so is a
+ * sign-up name of theirs still waiting for Firebase ([PendingDisplayName]): personal data does not outlive the account.
  */
 @KoinViewModel
 internal class SettingsViewModel(
@@ -82,15 +83,26 @@ internal class SettingsViewModel(
 
     override fun requestDelete() {
         _state.update {
-            it.copy(confirmingDelete = true, sharedSpacesToDelete = null, loadingSharedSpaces = true, error = null)
+            it.copy(
+                confirmingDelete = true,
+                sharedSpacesToDelete = null,
+                joinedSpaces = null,
+                loadingSharedSpaces = true,
+                error = null
+            )
         }
         sharedSpacesLoad?.cancel()
         // The dialog opens at once; the count follows, and Delete waits for it. Without an answer the dialog shows
         // the general warning only.
         sharedSpacesLoad = viewModelScope.launch {
-            val spaces = repository.spaces()
-            val count = (spaces as? RestResult.Success)?.result?.sharedOwnedCount()
-            _state.update { it.copy(sharedSpacesToDelete = count, loadingSharedSpaces = false) }
+            val spaces = (repository.spaces() as? RestResult.Success)?.result
+            _state.update {
+                it.copy(
+                    sharedSpacesToDelete = spaces?.sharedOwnedCount(),
+                    joinedSpaces = spaces?.joinedCount(),
+                    loadingSharedSpaces = false
+                )
+            }
         }
     }
 

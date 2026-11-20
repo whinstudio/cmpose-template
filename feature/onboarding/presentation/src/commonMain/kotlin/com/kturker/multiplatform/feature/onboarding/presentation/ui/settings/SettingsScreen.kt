@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kturker.multiplatform.core.about.openUriSafely
 import com.kturker.multiplatform.core.database.theme.ThemeMode
 import com.kturker.multiplatform.core.designsystem.component.KtIcon
 import com.kturker.multiplatform.core.designsystem.component.KtText
@@ -124,14 +125,14 @@ internal fun SettingsScreen(
         uiState.privacyPolicyUrl?.let { url ->
             SettingsLinkRow(
                 text = LocalStringResources.current.settingsPrivacyPolicy,
-                onClick = { uriHandler.openUri(url) }
+                onClick = { uriHandler.openUriSafely(url) }
             )
         }
 
         uiState.termsUrl?.let { url ->
             SettingsLinkRow(
                 text = LocalStringResources.current.settingsTerms,
-                onClick = { uriHandler.openUri(url) }
+                onClick = { uriHandler.openUriSafely(url) }
             )
         }
 

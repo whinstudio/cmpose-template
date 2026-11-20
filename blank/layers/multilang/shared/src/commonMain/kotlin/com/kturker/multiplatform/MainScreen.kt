@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.kturker.multiplatform.core.about.openUriSafely
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.image.ImageLoaderSetup
 // cmpose:insights
@@ -28,6 +29,7 @@ import com.kturker.multiplatform.core.navigation.FeatureEntry
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
+import com.kturker.multiplatform.core.presentation.testTagsAsResourceId
 import com.kturker.multiplatform.core.review.ReviewRequestEffect
 import com.kturker.multiplatform.core.update.AppUpdateEffect
 import com.kturker.multiplatform.core.update.UpdateTexts
@@ -102,7 +104,7 @@ fun MainScreen(
             LocalAboutTexts provides aboutTexts
         ) {
             Scaffold(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTagsAsResourceId(),
                 topBar = {
                     OfflineBanner(text = LocalStringResources.current.offlineBanner)
                     // cmpose:backend
@@ -123,7 +125,7 @@ fun MainScreen(
                                 entries = entries,
                                 onEntryClick = { entry -> navigationManager.navigate(entry.destination) },
                                 onDocumentationClick = {
-                                    uriHandler.openUri("https://whinstudio.github.io/cmpose/guide.html")
+                                    uriHandler.openUriSafely("https://whinstudio.github.io/cmpose/guide.html")
                                 }
                             )
                         }

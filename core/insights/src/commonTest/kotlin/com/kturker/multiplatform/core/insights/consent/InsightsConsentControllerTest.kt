@@ -33,7 +33,7 @@ class InsightsConsentControllerTest {
 
     @Test
     fun grantedTurnsAnalyticsOnAtStart() {
-        store.save(analytics = AnalyticsConsent.Granted, crashReports = true)
+        store.saveAnalytics(AnalyticsConsent.Granted)
         val controller = InsightsConsentController(store, insights)
 
         controller.apply()
@@ -45,7 +45,7 @@ class InsightsConsentControllerTest {
 
     @Test
     fun deniedKeepsAnalyticsOffAndDoesNotAsk() {
-        store.save(analytics = AnalyticsConsent.Denied, crashReports = true)
+        store.saveAnalytics(AnalyticsConsent.Denied)
         val controller = InsightsConsentController(store, insights)
 
         controller.apply()
@@ -117,6 +117,33 @@ class InsightsConsentControllerTest {
         assertEquals(listOf(false), insights.crashReports)
     }
 
+    // Two quick changes (the crash switch, then the prompt's answer) each write their own key: neither can put back
+    // the other's older value
+    @Test
+    fun aCrashSwitchThenAnAnswerKeepsBoth() {
+        val keyStore = KeyRecordingConsentStore()
+        val controller = InsightsConsentController(keyStore, insights)
+
+        controller.setCrashReports(false)
+        controller.grantAnalytics()
+
+        assertEquals(AnalyticsConsent.Granted, keyStore.analytics)
+        assertFalse(keyStore.crashReports)
+        assertEquals(listOf(KEY_CRASH_REPORTS, KEY_ANALYTICS), keyStore.writes)
+    }
+
+    @Test
+    fun thePromptIsPendingOnlyWhileUnansweredAndNotDismissed() {
+        assertTrue(InsightsConsentController(store, insights).analyticsPromptPending.value)
+
+        val dismissed = InsightsConsentController(store, insights)
+        dismissed.dismissAnalyticsPrompt()
+        assertFalse(dismissed.analyticsPromptPending.value)
+
+        store.saveAnalytics(AnalyticsConsent.Granted)
+        assertFalse(InsightsConsentController(store, insights).analyticsPromptPending.value)
+    }
+
     // Without the app's Firebase config there is no analytics to ask about
     @Test
     fun withoutFirebaseThereIsNothingToAsk() {
@@ -174,7 +201,7 @@ class InsightsConsentControllerTest {
 
     @Test
     fun anEarlierAnswerIsNoPrompt() {
-        store.save(analytics = AnalyticsConsent.Denied, crashReports = true)
+        store.saveAnalytics(AnalyticsConsent.Denied)
 
         assertFalse(InsightsConsentController(store, insights).analyticsPromptPending.value)
     }
@@ -190,6 +217,28 @@ class InsightsConsentControllerTest {
         controller.apply()
 
         assertTrue(controller.analyticsPromptPending.value)
+    }
+}
+
+private const val KEY_ANALYTICS = "analytics"
+private const val KEY_CRASH_REPORTS = "crashReports"
+
+// Records which key each save wrote
+private class KeyRecordingConsentStore : InsightsConsentStore {
+    override var analytics = AnalyticsConsent.Unknown
+        private set
+    override var crashReports = true
+        private set
+    val writes = mutableListOf<String>()
+
+    override fun saveAnalytics(answer: AnalyticsConsent) {
+        analytics = answer
+        writes += KEY_ANALYTICS
+    }
+
+    override fun saveCrashReports(enabled: Boolean) {
+        crashReports = enabled
+        writes += KEY_CRASH_REPORTS
     }
 }
 

@@ -15,6 +15,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kturker.multiplatform.core.insights.consent.AnalyticsConsent
 import com.kturker.multiplatform.core.insights.consent.InsightsConsentController
@@ -36,7 +38,11 @@ fun InsightsConsentSettings(
     val crashReports by controller.crashReportsEnabled.collectAsState()
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(texts.settingsTitle, style = MaterialTheme.typography.titleSmall)
+        Text(
+            texts.settingsTitle,
+            modifier = Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleSmall
+        )
         ConsentSwitch(
             label = texts.analytics,
             description = texts.analyticsDescription,

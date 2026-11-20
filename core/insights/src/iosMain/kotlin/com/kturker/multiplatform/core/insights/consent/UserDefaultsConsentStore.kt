@@ -15,13 +15,11 @@ internal class UserDefaultsConsentStore(private val defaults: NSUserDefaults = N
     override val crashReports: Boolean
         get() = defaults.objectForKey(KEY_CRASH_REPORTS) == null || defaults.boolForKey(KEY_CRASH_REPORTS)
 
-    override fun save(
-        analytics: AnalyticsConsent,
-        crashReports: Boolean
-    ) {
-        defaults.setObject(analytics.name, forKey = KEY_ANALYTICS)
-        defaults.setBool(crashReports, forKey = KEY_CRASH_REPORTS)
-    }
+    override fun saveAnalytics(answer: AnalyticsConsent) =
+        defaults.setObject(answer.name, forKey = KEY_ANALYTICS)
+
+    override fun saveCrashReports(enabled: Boolean) =
+        defaults.setBool(enabled, forKey = KEY_CRASH_REPORTS)
 
     private companion object {
         const val KEY_ANALYTICS = "insights.analyticsConsent"

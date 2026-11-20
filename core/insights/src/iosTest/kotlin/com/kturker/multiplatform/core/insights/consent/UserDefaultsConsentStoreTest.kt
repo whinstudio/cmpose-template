@@ -6,6 +6,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 // The answers live in the app's own NSUserDefaults (not core/database, which a project without DataStore lacks)
@@ -31,16 +32,35 @@ class UserDefaultsConsentStoreTest {
 
     @Test
     fun answersOutliveTheStore() {
-        UserDefaultsConsentStore(defaults).save(analytics = AnalyticsConsent.Granted, crashReports = false)
+        UserDefaultsConsentStore(defaults).apply {
+            saveAnalytics(AnalyticsConsent.Granted)
+            saveCrashReports(false)
+        }
 
         val reopened = UserDefaultsConsentStore(defaults)
 
         assertEquals(AnalyticsConsent.Granted, reopened.analytics)
         assertFalse(reopened.crashReports)
 
-        reopened.save(analytics = AnalyticsConsent.Denied, crashReports = true)
+        reopened.saveAnalytics(AnalyticsConsent.Denied)
+        reopened.saveCrashReports(true)
         assertEquals(AnalyticsConsent.Denied, UserDefaultsConsentStore(defaults).analytics)
         assertTrue(UserDefaultsConsentStore(defaults).crashReports)
+    }
+
+    // Each save writes its own key only: a quick second change cannot put back the other value
+    @Test
+    fun savingOneKeyLeavesTheOtherUntouched() {
+        val store = UserDefaultsConsentStore(defaults)
+
+        store.saveCrashReports(false)
+        assertNull(defaults.objectForKey(KEYS.first()))
+
+        store.saveAnalytics(AnalyticsConsent.Granted)
+        assertFalse(store.crashReports)
+
+        store.saveCrashReports(true)
+        assertEquals(AnalyticsConsent.Granted, store.analytics)
     }
 
     // A value this version does not know (a later version's answer, a damaged file) asks again

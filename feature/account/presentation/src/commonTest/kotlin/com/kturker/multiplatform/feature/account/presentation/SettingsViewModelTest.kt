@@ -14,6 +14,7 @@ import com.kturker.multiplatform.core.domain.DataError
 import com.kturker.multiplatform.core.domain.RestResult
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.feature.account.presentation.data.DataStorePendingDisplayName
+import com.kturker.multiplatform.feature.account.presentation.data.joinedCount
 import com.kturker.multiplatform.feature.account.presentation.data.sharedOwnedCount
 import com.kturker.multiplatform.feature.account.presentation.ui.UiError
 import com.kturker.multiplatform.feature.account.presentation.ui.settings.SettingsViewModel
@@ -177,6 +178,95 @@ class SettingsViewModelTest {
 
         assertTrue(viewModel.state.value.confirmingDelete)
         assertEquals(3, viewModel.state.value.sharedSpacesToDelete)
+    }
+
+    // Content added to someone else's space stays there: the dialog says how many such spaces there are
+    @Test
+    fun theJoinedSpacesAreCountedWhenDeleteIsRequested() = runTest {
+        repository.spacesResult = RestResult.Success(
+            listOf(
+                space("personal", memberCount = 1, personal = true),
+                space("shared", memberCount = 3),
+                space("joined-a", role = Role.EDITOR, memberCount = 2),
+                space("joined-b", role = Role.VIEWER, memberCount = 4),
+            )
+        )
+        val viewModel = viewModel()
+
+        viewModel.requestDelete()
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.state.value.joinedSpaces)
+        assertEquals(1, viewModel.state.value.sharedSpacesToDelete)
+    }
+
+    @Test
+    fun noJoinedLineWithoutJoinedSpaces() = runTest {
+        repository.spacesResult = RestResult.Success(
+            listOf(
+                space("personal", memberCount = 1, personal = true),
+                space("shared", memberCount = 3),
+            )
+        )
+        val viewModel = viewModel()
+
+        viewModel.requestDelete()
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.state.value.joinedSpaces)
+    }
+
+    @Test
+    fun aFailedSpaceListShowsNoJoinedLine() = runTest {
+        repository.spacesResult = RestResult.Error(DataError.Network)
+        val viewModel = viewModel()
+
+        viewModel.requestDelete()
+        advanceUntilIdle()
+        assertNull(viewModel.state.value.joinedSpaces)
+
+        viewModel.confirmDelete()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("canDeleteNow", "deleteServerAccount", "deleteUser", "signOut", "forgetToken"),
+            log - "spaces"
+        )
+    }
+
+    // A count from an earlier opening is not shown while the new one is on its way
+    @Test
+    fun reopeningTheDialogClearsTheEarlierJoinedCount() = runTest {
+        repository.spacesResult = RestResult.Success(listOf(space("joined", role = Role.EDITOR)))
+        val viewModel = viewModel()
+        viewModel.requestDelete()
+        advanceUntilIdle()
+        assertEquals(1, viewModel.state.value.joinedSpaces)
+        viewModel.dismissDelete()
+
+        val gate = CompletableDeferred<Unit>()
+        repository.spacesGate = gate
+        viewModel.requestDelete()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.joinedSpaces)
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    // Every role but the owner's is a space someone else owns
+    @Test
+    fun joinedCountTruthTable() {
+        val cases = listOf(
+            space("owner-personal", memberCount = 1, personal = true) to 0,
+            space("owner-shared", memberCount = 5) to 0,
+            space("editor", role = Role.EDITOR, memberCount = 3) to 1,
+            space("viewer", role = Role.VIEWER, memberCount = 3) to 1,
+            space("unknown", role = Role.UNKNOWN, memberCount = 3) to 1,
+        )
+        cases.forEach { (space, expected) ->
+            assertEquals(expected, listOf(space).joinedCount(), space.id)
+        }
     }
 
     // role x members x personal: only an owner's space with someone else in it counts

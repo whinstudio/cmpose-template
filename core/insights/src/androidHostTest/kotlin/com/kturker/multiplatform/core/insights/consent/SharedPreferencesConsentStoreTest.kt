@@ -1,6 +1,11 @@
 package com.kturker.multiplatform.core.insights.consent
 
 import android.content.SharedPreferences
+import co.touchlab.kermit.ExperimentalKermitApi
+import co.touchlab.kermit.Logger
+import co.touchlab.kermit.Severity
+import co.touchlab.kermit.TestLogWriter
+import co.touchlab.kermit.platformLogWriter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -22,16 +27,35 @@ class SharedPreferencesConsentStoreTest {
 
     @Test
     fun answersOutliveTheStore() {
-        SharedPreferencesConsentStore(preferences).save(analytics = AnalyticsConsent.Granted, crashReports = false)
+        SharedPreferencesConsentStore(preferences).apply {
+            saveAnalytics(AnalyticsConsent.Granted)
+            saveCrashReports(false)
+        }
 
         val reopened = SharedPreferencesConsentStore(preferences)
 
         assertEquals(AnalyticsConsent.Granted, reopened.analytics)
         assertFalse(reopened.crashReports)
 
-        reopened.save(analytics = AnalyticsConsent.Denied, crashReports = true)
+        reopened.saveAnalytics(AnalyticsConsent.Denied)
+        reopened.saveCrashReports(true)
         assertEquals(AnalyticsConsent.Denied, SharedPreferencesConsentStore(preferences).analytics)
         assertTrue(SharedPreferencesConsentStore(preferences).crashReports)
+    }
+
+    // Each save writes its own key only: a quick second change cannot put back the other value
+    @Test
+    fun savingOneKeyLeavesTheOtherUntouched() {
+        val store = SharedPreferencesConsentStore(preferences)
+
+        store.saveCrashReports(false)
+        assertEquals(setOf("crash_reports"), preferences.all.keys)
+
+        store.saveAnalytics(AnalyticsConsent.Granted)
+        assertFalse(store.crashReports)
+
+        store.saveCrashReports(true)
+        assertEquals(AnalyticsConsent.Granted, store.analytics)
     }
 
     // A value this version does not know (a later version's answer, a damaged file) asks again
@@ -42,10 +66,25 @@ class SharedPreferencesConsentStoreTest {
         assertEquals(AnalyticsConsent.Unknown, SharedPreferencesConsentStore(preferences).analytics)
     }
 
-    // Host tests have no Android Context (and so no Firebase): the answers are kept in memory
+    // Host tests have no Android Context (and so no Firebase): the answers are kept in memory, and the log says so
+    @OptIn(ExperimentalKermitApi::class)
     @Test
     fun withoutAContextTheStoreIsInMemory() {
-        assertIs<InMemoryConsentStore>(platformConsentStore())
+        val console = TestLogWriter(loggable = Severity.Verbose)
+        Logger.setLogWriters(console)
+        Logger.setMinSeverity(Severity.Verbose)
+        try {
+            assertIs<InMemoryConsentStore>(platformConsentStore())
+
+            val warning = console.logs.single()
+            assertEquals(Severity.Warn, warning.severity)
+            assertEquals(
+                "Consent store: no Android Context in Koin, consent is kept in memory only",
+                warning.message
+            )
+        } finally {
+            Logger.setLogWriters(platformLogWriter())
+        }
     }
 }
 

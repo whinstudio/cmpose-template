@@ -18,7 +18,7 @@ internal val resourceTR = StringResourcesUiModel(
     // cmpose:insights
     insightsPromptTitle = "Uygulamayı geliştirmemize yardım edin",
     insightsPromptMessage = "Açtığınız ekranlar gibi kullanım verilerini, uygulamayı geliştirmek için toplayabilir " +
-        "miyiz? Bu tercihi istediğiniz zaman ayarlardan değiştirebilirsiniz.",
+        "miyiz? Bu tercihi istediğiniz zaman değiştirebilirsiniz.",
     insightsAllow = "İzin ver",
     insightsDeny = "İzin verme",
     insightsSettingsTitle = "Gizlilik",

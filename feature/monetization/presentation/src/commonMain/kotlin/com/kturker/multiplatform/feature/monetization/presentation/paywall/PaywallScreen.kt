@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kturker.multiplatform.core.about.LegalLink
 import com.kturker.multiplatform.core.about.LegalLinkKind
+import com.kturker.multiplatform.core.about.openUriSafely
 import com.kturker.multiplatform.core.purchases.PaywallPackage
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -205,7 +206,7 @@ private fun LegalLinks(links: List<LegalLink>) {
     val uriHandler = LocalUriHandler.current
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         links.forEach { link ->
-            TextButton(onClick = { uriHandler.openUri(link.url) }) {
+            TextButton(onClick = { uriHandler.openUriSafely(link.url) }) {
                 Text(
                     when (link.kind) {
                         LegalLinkKind.PrivacyPolicy -> texts.privacyPolicy

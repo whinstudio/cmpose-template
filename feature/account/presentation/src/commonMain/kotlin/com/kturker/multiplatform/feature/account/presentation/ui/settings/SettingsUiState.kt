@@ -11,6 +11,11 @@ internal data class SettingsUiState(
      * null while loading or when the server could not be asked.
      */
     val sharedSpacesToDelete: Int? = null,
+    /**
+     * Spaces someone else owns and the user joined (same GET /spaces), where the content they added stays; null
+     * while loading or when the server could not be asked.
+     */
+    val joinedSpaces: Int? = null,
     /** The shared-space count is still on its way; the deletion cannot be confirmed until it arrives or fails. */
     val loadingSharedSpaces: Boolean = false,
     val busy: Boolean = false,

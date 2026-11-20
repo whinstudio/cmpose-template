@@ -189,9 +189,13 @@ internal class FakeAccountRepository(val log: MutableList<String> = mutableListO
         return spacesResult
     }
 
+    /** Runs inside [updateProfile], before it answers, to simulate something happening meanwhile. */
+    var onUpdateProfile: () -> Unit = {}
+
     override suspend fun updateProfile(profile: Profile): RestResult<Unit> {
         log += "updateProfile"
         profiles += profile
+        onUpdateProfile()
         return updateProfileResult
     }
 

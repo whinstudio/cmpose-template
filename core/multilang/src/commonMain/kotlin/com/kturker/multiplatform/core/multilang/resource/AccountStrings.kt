@@ -30,6 +30,10 @@ data class AccountStrings(
     val sharedSpacesDeletedOne: String,
     /** [sharedSpacesDeleteWarning] for any other number; `{count}` stands for the number. */
     val sharedSpacesDeletedOther: String,
+    /** [joinedSpacesKeptWarning] for exactly one space; `{count}` stands for the number. */
+    val joinedSpacesKeptOne: String,
+    /** [joinedSpacesKeptWarning] for any other number; `{count}` stands for the number. */
+    val joinedSpacesKeptOther: String,
     val signInAgainToDelete: String,
     val delete: String,
     val back: String,
@@ -68,6 +72,10 @@ data class AccountStrings(
                 "access.",
             sharedSpacesDeletedOther = "{count} spaces you share with others will be deleted too, and their members " +
                 "lose access.",
+            joinedSpacesKeptOne = "Content you added to {count} space owned by someone else stays there and is no " +
+                "longer linked to you.",
+            joinedSpacesKeptOther = "Content you added to {count} spaces owned by others stays there and is no " +
+                "longer linked to you.",
             signInAgainToDelete = "Sign in again to delete your account",
             delete = "Delete",
             back = "Back",
@@ -101,6 +109,10 @@ data class AccountStrings(
                 "silinir. Geri alınamaz.",
             sharedSpacesDeletedOne = "Paylaştığın {count} alan da silinecek; üyeleri erişimini kaybeder.",
             sharedSpacesDeletedOther = "Paylaştığın {count} alan da silinecek; üyeleri erişimini kaybeder.",
+            joinedSpacesKeptOne = "Başkasına ait {count} alana eklediğin içerik orada kalır ve artık seninle " +
+                "ilişkilendirilmez.",
+            joinedSpacesKeptOther = "Başkasına ait {count} alana eklediğin içerik orada kalır ve artık seninle " +
+                "ilişkilendirilmez.",
             signInAgainToDelete = "Hesabı silmek için yeniden giriş yap",
             delete = "Sil",
             back = "Geri",
@@ -136,6 +148,10 @@ data class AccountStrings(
                 "perderán el acceso.",
             sharedSpacesDeletedOther = "También se eliminarán {count} espacios que compartes con otros; sus miembros " +
                 "perderán el acceso.",
+            joinedSpacesKeptOne = "El contenido que añadiste a {count} espacio de otra persona se queda allí y deja " +
+                "de estar vinculado a ti.",
+            joinedSpacesKeptOther = "El contenido que añadiste a {count} espacios de otras personas se queda allí y " +
+                "deja de estar vinculado a ti.",
             signInAgainToDelete = "Vuelve a iniciar sesión para eliminar tu cuenta",
             delete = "Eliminar",
             back = "Atrás",
@@ -171,6 +187,10 @@ data class AccountStrings(
                 "perderanno l’accesso.",
             sharedSpacesDeletedOther = "Verranno eliminati anche {count} spazi che condividi con altri; i loro " +
                 "membri perderanno l’accesso.",
+            joinedSpacesKeptOne = "I contenuti che hai aggiunto a {count} spazio di un’altra persona restano lì e " +
+                "non sono più collegati a te.",
+            joinedSpacesKeptOther = "I contenuti che hai aggiunto a {count} spazi di altre persone restano lì e non " +
+                "sono più collegati a te.",
             signInAgainToDelete = "Accedi di nuovo per eliminare il tuo account",
             delete = "Elimina",
             back = "Indietro",
@@ -206,6 +226,10 @@ data class AccountStrings(
                 "membres perdront l’accès.",
             sharedSpacesDeletedOther = "{count} espaces que vous partagez avec d’autres seront aussi supprimés ; " +
                 "leurs membres perdront l’accès.",
+            joinedSpacesKeptOne = "Le contenu que vous avez ajouté à {count} espace d’une autre personne y reste et " +
+                "ne vous est plus associé.",
+            joinedSpacesKeptOther = "Le contenu que vous avez ajouté à {count} espaces d’autres personnes y reste et " +
+                "ne vous est plus associé.",
             signInAgainToDelete = "Reconnectez-vous pour supprimer votre compte",
             delete = "Supprimer",
             back = "Retour",
@@ -250,3 +274,10 @@ private const val COUNT = "{count}"
  */
 fun AccountStrings.sharedSpacesDeleteWarning(count: Int): String =
     (if (count == 1) sharedSpacesDeletedOne else sharedSpacesDeletedOther).replace(COUNT, count.toString())
+
+/**
+ * "Content you added to N spaces of others stays there", in the singular for exactly one; the account screen shows
+ * it only for one or more spaces, like [sharedSpacesDeleteWarning].
+ */
+fun AccountStrings.joinedSpacesKeptWarning(count: Int): String =
+    (if (count == 1) joinedSpacesKeptOne else joinedSpacesKeptOther).replace(COUNT, count.toString())

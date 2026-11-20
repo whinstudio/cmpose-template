@@ -34,6 +34,7 @@ kotlin {
             implementation(projects.core.image)
             implementation(projects.core.multilang)
             implementation(projects.core.navigation)
+            implementation(projects.core.presentation)
             implementation(projects.core.about)
             implementation(projects.core.review)
             implementation(projects.core.update)

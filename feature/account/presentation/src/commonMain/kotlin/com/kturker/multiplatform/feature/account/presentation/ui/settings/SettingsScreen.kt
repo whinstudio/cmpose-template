@@ -31,8 +31,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.kturker.multiplatform.core.about.openUriSafely
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
+import com.kturker.multiplatform.core.multilang.resource.joinedSpacesKeptWarning
 import com.kturker.multiplatform.core.multilang.resource.sharedSpacesDeleteWarning
 import com.kturker.multiplatform.feature.account.presentation.ui.LegalLinksRow
 import com.kturker.multiplatform.feature.account.presentation.ui.SignInCallbacks
@@ -104,13 +106,14 @@ private fun SettingsScreen(
             com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentSettings()
             // /cmpose:insights
             // Below the deletion and what it may ask for (a fresh sign-in, its error)
-            LegalLinksRow(links = state.legalLinks, onOpen = uriHandler::openUri)
+            LegalLinksRow(links = state.legalLinks, onOpen = { uriHandler.openUriSafely(it) })
         }
     }
 
     if (state.confirmingDelete) {
         DeleteDialog(
             sharedSpaces = state.sharedSpacesToDelete,
+            joinedSpaces = state.joinedSpaces,
             canConfirm = !state.loadingSharedSpaces,
             actions = actions
         )
@@ -120,6 +123,7 @@ private fun SettingsScreen(
 @Composable
 private fun DeleteDialog(
     sharedSpaces: Int?,
+    joinedSpaces: Int?,
     canConfirm: Boolean,
     actions: SettingsActions
 ) {
@@ -136,6 +140,8 @@ private fun DeleteDialog(
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+                // Nothing is deleted there, so no error color
+                if (joinedSpaces != null && joinedSpaces > 0) Text(strings.joinedSpacesKeptWarning(joinedSpaces))
             }
         },
         confirmButton = {

@@ -54,4 +54,45 @@ class SharedSpacesWarningTest {
             }
         }
     }
+
+    @Test
+    fun oneJoinedSpaceUsesTheSingular() {
+        assertEquals(
+            "Content you added to 1 space owned by someone else stays there and is no longer linked to you.",
+            english.joinedSpacesKeptWarning(1)
+        )
+    }
+
+    @Test
+    fun otherJoinedCountsUseThePlural() {
+        assertEquals(
+            "Content you added to 2 spaces owned by others stays there and is no longer linked to you.",
+            english.joinedSpacesKeptWarning(2)
+        )
+    }
+
+    @Test
+    fun turkishKeepsOneJoinedFormForEveryCount() {
+        val turkish = languageResources.getValue(AppLanguage.TR).account
+
+        assertEquals(
+            "Başkasına ait 1 alana eklediğin içerik orada kalır ve artık seninle ilişkilendirilmez.",
+            turkish.joinedSpacesKeptWarning(1)
+        )
+        assertEquals(
+            "Başkasına ait 3 alana eklediğin içerik orada kalır ve artık seninle ilişkilendirilmez.",
+            turkish.joinedSpacesKeptWarning(3)
+        )
+    }
+
+    @Test
+    fun everyLanguageFillsInTheJoinedCount() {
+        languageResources.forEach { (language, strings) ->
+            listOf(1, 2, 7).forEach { count ->
+                val text = strings.account.joinedSpacesKeptWarning(count)
+                assertTrue(text.contains(count.toString()), "$language $count: $text")
+                assertFalse(text.contains("{count}"), "$language $count: $text")
+            }
+        }
+    }
 }

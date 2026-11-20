@@ -26,6 +26,7 @@ import com.kturker.multiplatform.core.multilang.resource.StringResourcesUiModel
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
+import com.kturker.multiplatform.core.presentation.testTagsAsResourceId
 import com.kturker.multiplatform.core.review.ReviewRequestEffect
 import com.kturker.multiplatform.core.update.AppUpdateEffect
 import com.kturker.multiplatform.core.update.UpdateTexts
@@ -76,7 +77,7 @@ fun MainScreen(
             LocalInsightsConsentTexts provides resource.insightsConsentTexts()
         ) {
             Scaffold(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTagsAsResourceId(),
                 topBar = {
                     OfflineBanner(text = LocalStringResources.current.offlineBanner)
                     // cmpose:backend

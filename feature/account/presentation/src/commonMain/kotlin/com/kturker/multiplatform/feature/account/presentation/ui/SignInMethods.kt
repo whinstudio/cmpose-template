@@ -2,11 +2,15 @@ package com.kturker.multiplatform.feature.account.presentation.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -49,13 +53,15 @@ internal fun SignInMethods(
         OutlinedButton(onClick = callbacks.onGoogle, enabled = enabled, modifier = Modifier.fillMaxWidth()) {
             Text(strings.continueWithGoogle)
         }
-        // Apple's guidelines: a black button with white "Sign in with Apple"; shown on Android too (web flow)
+        // Apple's guidelines: a black button, white Apple logo and "Sign in with Apple"; on Android too (web flow)
         Button(
             onClick = callbacks.onApple,
             enabled = enabled,
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
             modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(AppleLogo, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
             Text(strings.signInWithApple)
         }
     }

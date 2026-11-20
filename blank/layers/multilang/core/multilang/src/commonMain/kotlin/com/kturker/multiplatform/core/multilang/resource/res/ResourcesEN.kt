@@ -18,7 +18,7 @@ internal val resourceEN = StringResourcesUiModel(
     // cmpose:insights
     insightsPromptTitle = "Help improve the app",
     insightsPromptMessage = "Can we collect usage data, such as which screens you open, to improve the app? " +
-        "You can change this at any time in the settings.",
+        "You can change this at any time.",
     insightsAllow = "Allow",
     insightsDeny = "Don't allow",
     insightsSettingsTitle = "Privacy",

@@ -114,7 +114,7 @@ internal class BackendProfileSync(
         job = scope.launch {
             val profile = Profile(displayName = displayName(uid), personalSpaceName = spaceName)
             if (auth.currentUid() != uid) {
-                log.i { "Profile not sent: another user signed in" }
+                log.i { "Profile not sent: the signed-in user changed" }
                 return@launch
             }
             val result = repository.updateProfile(profile)

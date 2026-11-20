@@ -35,6 +35,12 @@ interface AccountRepository {
  */
 fun List<Space>.sharedOwnedCount(): Int = count { it.role == Role.OWNER && it.memberCount > 1 }
 
+/**
+ * The spaces someone else owns and the user joined. The deletion leaves them and the content the user added there:
+ * that content stays for the other members and is no longer linked to the user.
+ */
+fun List<Space>.joinedCount(): Int = count { it.role != Role.OWNER }
+
 /** [AccountRepository] over the backend client (base URL, bearer token, JSON; a 401 refreshes the token once). */
 internal class KtorAccountRepository(private val client: HttpClient) :
     BaseRepository(),

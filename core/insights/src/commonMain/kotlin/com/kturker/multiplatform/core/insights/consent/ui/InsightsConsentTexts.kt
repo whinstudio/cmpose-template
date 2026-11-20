@@ -9,7 +9,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 data class InsightsConsentTexts(
     val promptTitle: String = "Help improve the app",
     val promptMessage: String = "Can we collect usage data, such as which screens you open, to improve the app? " +
-        "You can change this at any time in the settings.",
+        "You can change this at any time.",
     val allow: String = "Allow",
     val deny: String = "Don't allow",
     val settingsTitle: String = "Privacy",

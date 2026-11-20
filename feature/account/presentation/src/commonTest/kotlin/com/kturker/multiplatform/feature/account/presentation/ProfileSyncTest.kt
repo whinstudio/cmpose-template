@@ -105,6 +105,19 @@ class ProfileSyncTest {
         assertFalse("refreshSelectedSpace" in log)
     }
 
+    // Another account signed in while the profile was on its way: no reload on the previous user's behalf
+    @Test
+    fun noReloadWhenTheUserChangedWhileTheProfileWasSent() = runTest {
+        repository.onUpdateProfile = { auth.switchUser("u2") }
+        val sync = sync(this)
+
+        sync.afterSignIn()
+        sync.job?.join()
+
+        assertEquals(1, repository.profiles.size)
+        assertFalse("refreshSelectedSpace" in log)
+    }
+
     // The app's language at the moment of the sign-in, not the device's
     @Test
     fun thePersonalSpaceNameFollowsTheAppLanguage() = runTest {

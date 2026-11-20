@@ -29,7 +29,7 @@ internal val resourceFR = StringResourcesUiModel(
     // /cmpose:backend
     insightsPromptTitle = "Aidez-nous à améliorer l’app",
     insightsPromptMessage = "Pouvons-nous collecter des données d’utilisation, comme les écrans que vous ouvrez, " +
-        "pour améliorer l’app ? Vous pouvez modifier ce choix à tout moment dans les réglages.",
+        "pour améliorer l’app ? Vous pouvez modifier ce choix à tout moment.",
     insightsAllow = "Autoriser",
     insightsDeny = "Ne pas autoriser",
     insightsSettingsTitle = "Confidentialité",

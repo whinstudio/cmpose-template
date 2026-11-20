@@ -25,6 +25,9 @@ dependencies {
     implementation(libs.detekt.plugin)
 
     implementation(libs.ksplib)
+
+    // The catalog's kotlin-test; on the JUnit Platform it resolves to its JUnit 5 variant
+    testImplementation(libs.kotlin.test)
 }
 
 gradlePlugin {
@@ -80,4 +83,8 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

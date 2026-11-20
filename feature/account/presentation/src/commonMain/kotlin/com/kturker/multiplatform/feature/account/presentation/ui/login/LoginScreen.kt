@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import com.kturker.multiplatform.core.about.openUriSafely
 import com.kturker.multiplatform.core.designsystem.language.LocalStringResources
 import com.kturker.multiplatform.core.multilang.resource.account
 import com.kturker.multiplatform.feature.account.presentation.ui.LegalLinksRow
@@ -117,6 +118,6 @@ private fun LoginContent(
         }
         state.error?.let { Text(uiErrorText(it), color = MaterialTheme.colorScheme.error) }
         // Below both forms: the privacy policy is reachable before an account is made
-        LegalLinksRow(links = state.legalLinks, onOpen = uriHandler::openUri)
+        LegalLinksRow(links = state.legalLinks, onOpen = { uriHandler.openUriSafely(it) })
     }
 }

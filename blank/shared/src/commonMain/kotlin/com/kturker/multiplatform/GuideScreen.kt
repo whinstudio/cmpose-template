@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.kturker.multiplatform.core.about.AppInfo
 import com.kturker.multiplatform.core.about.LegalLinkKind
 import com.kturker.multiplatform.core.about.licenses.LicensesDestination
+import com.kturker.multiplatform.core.about.openUriSafely
 // cmpose:insights
 import com.kturker.multiplatform.core.insights.consent.ui.InsightsConsentSettings
 // /cmpose:insights
@@ -130,7 +131,7 @@ private fun AboutDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(texts.version(appInfo.version.displayText))
                 appInfo.legalLinks.forEach { link ->
-                    TextButton(onClick = { uriHandler.openUri(link.url) }) {
+                    TextButton(onClick = { uriHandler.openUriSafely(link.url) }) {
                         Text(if (link.kind == LegalLinkKind.PrivacyPolicy) texts.privacyPolicy else texts.terms)
                     }
                 }

@@ -11,16 +11,15 @@ enum class AnalyticsConsent { Unknown, Granted, Denied }
 /**
  * Where the answers are kept: the platform's own key-value storage (SharedPreferences, NSUserDefaults), not
  * core/database, which a project without DataStore does not have. A new store has no analytics answer and crash
- * reports on.
+ * reports on. Each save writes its own key only, so a quick second change cannot put back the other's older value.
  */
 interface InsightsConsentStore {
     val analytics: AnalyticsConsent
     val crashReports: Boolean
 
-    fun save(
-        analytics: AnalyticsConsent,
-        crashReports: Boolean
-    )
+    fun saveAnalytics(answer: AnalyticsConsent)
+
+    fun saveCrashReports(enabled: Boolean)
 }
 
 /**
@@ -81,13 +80,13 @@ class InsightsConsentController(private val store: InsightsConsentStore, private
     }
 
     fun setCrashReports(enabled: Boolean) {
-        store.save(analytics = analytics.value, crashReports = enabled)
+        store.saveCrashReports(enabled)
         crashReports.value = enabled
         insights.setCrashReportsEnabled(enabled)
     }
 
     private fun answerAnalytics(answer: AnalyticsConsent) {
-        store.save(analytics = answer, crashReports = crashReports.value)
+        store.saveAnalytics(answer)
         analytics.value = answer
         insights.setAnalyticsEnabled(answer == AnalyticsConsent.Granted)
         updatePromptPending()
@@ -105,11 +104,11 @@ internal class InMemoryConsentStore : InsightsConsentStore {
     override var crashReports = true
         private set
 
-    override fun save(
-        analytics: AnalyticsConsent,
-        crashReports: Boolean
-    ) {
-        this.analytics = analytics
-        this.crashReports = crashReports
+    override fun saveAnalytics(answer: AnalyticsConsent) {
+        analytics = answer
+    }
+
+    override fun saveCrashReports(enabled: Boolean) {
+        crashReports = enabled
     }
 }
