@@ -20,6 +20,7 @@ import com.kturker.multiplatform.core.navigation.FeatureEntry
 import com.kturker.multiplatform.core.navigation.NavGraphProvider
 import com.kturker.multiplatform.core.navigation.NavigationCommand
 import com.kturker.multiplatform.core.navigation.NavigationManager
+import com.kturker.multiplatform.core.presentation.clearFocusOnTap
 import com.kturker.multiplatform.core.presentation.testTagsAsResourceId
 import com.kturker.multiplatform.core.review.ReviewRequestEffect
 import com.kturker.multiplatform.core.update.AppUpdateEffect
@@ -61,7 +62,7 @@ fun MainScreen(navigationManager: NavigationManager = koinInject()) {
 
     AppTheme {
         Scaffold(
-            modifier = Modifier.fillMaxSize().testTagsAsResourceId(),
+            modifier = Modifier.fillMaxSize().testTagsAsResourceId().clearFocusOnTap(),
             topBar = {
                 OfflineBanner(text = "No connection")
                 // cmpose:backend
